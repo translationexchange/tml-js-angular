@@ -1,4 +1,6 @@
-# TranslationExchange Angular directives [![Build Status](https://travis-ci.org/translationexchange/tml-js.svg?branch=master)](https://travis-ci.org/translationexchange/tml-js-angular)
+# TranslationExchange Angular directives 
+[![Build Status](https://travis-ci.org/translationexchange/tml-js.svg?branch=master)](https://travis-ci.org/translationexchange/tml-js-angular)
+[![Coverage Status](https://coveralls.io/repos/translationexchange/tml-js-angular/badge.png?branch=master)](https://coveralls.io/r/translationexchange/tml-js-angular?branch=master)
 
 
 This adds angular directives that allow you to perform seamless and advanced translations using TML from TranslationExchange.
