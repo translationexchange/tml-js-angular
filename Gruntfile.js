@@ -37,10 +37,6 @@ module.exports = function (grunt) {
                 cwd: 'node_modules/tml-js-browser'
             }
         }, function(error, result, code) {
-            if (error)
-            {
-                console.error('error building tml-js-browser', error.message || err);
-            }
             console.log(result.stdout);
             cb();
         });
