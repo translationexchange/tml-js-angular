@@ -27,6 +27,12 @@ npm install tml-js-angular
 
 ### Include it on your page (regular script tag)
 
+example is for bower, replace bower_components if you put it elsewhere.
+Make sure to include it after the angular script tag
+
+    <script src='bower_components/angular/angular.js'></script>
+    <script src='bower_components/tml-js-angular/src/tml-angular.js'></script>
+
 ### Include it on your page (AMD)
 
 
