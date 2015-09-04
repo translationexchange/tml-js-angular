@@ -1,0 +1,37 @@
+{
+  "results": {
+    "881189f3cd1c84a79187bb9f67a0837f": [
+      {
+        "label": "Привет, {user.name}",
+        "locked": true
+      }
+    ],
+    "2a6ff461efa7c3d78e5b75f1bc7fe0ff": [],
+    "7f7d39c71f5636aef4e6aad555d82016": [],
+    "cc70ae2c4eccca8f863799972597a9c5": [
+      {
+        "label": "Майкл Загрузил {count || фотографию, фотографии, фотографий}",
+        "locked": true
+      }
+    ],
+    "372105715500923ff39e68c821bf5f52": [
+      {
+        "label": "Сетка из выстрелов от {sourceList}",
+        "locked": true
+      }
+    ],
+    "ff9cd99b77c2c879c3a26d6630c6c110": [
+      {
+        "label": "Загрузить страницу {num} из {count}",
+        "locked": true
+      }
+    ],
+    "d541c79af1be6a05b1f16fca8b5730de": [
+      {
+        "label": "Привет Mир",
+        "locked": true
+      }
+    ]
+  },
+  "sources": []
+}

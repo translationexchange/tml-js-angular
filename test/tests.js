@@ -1,0 +1,254 @@
+/* global describe, inject, module, before, beforeEach,beforeAll, afterEach, it, expect, spyOn, jasmine */
+
+'use strict';
+
+describe('module tmlTr', function () {
+    var $rootScope, $compile, $window, $filter, tml;
+
+    var cleared = false;
+    var connected = false;
+
+    beforeEach(module('tml'));
+
+    beforeEach(inject(function ($injector) {
+        $rootScope = $injector.get('$rootScope');
+        $compile = $injector.get('$compile');
+        $window = $injector.get('$window');
+        $filter = $injector.get('$filter');
+
+        if (!cleared)
+        {
+            $window.localStorage.clear();
+            cleared = true;
+        }
+    }));
+
+    beforeEach(function (done)
+    {
+        if (connected)
+            return done();
+
+        connected = true;
+
+        $window.tml.init({
+            source: 'index',
+            cache: {
+                enabled: true,
+                adapter: "browser",
+                version: '20150902001636',
+                path: 'base/fixtures'
+            },
+            debug: true,
+            onLoad: function (app)
+            {
+                $window.tml.changeLanguage('ru');
+            },
+            onLoadChange: function (app)
+            {
+                // render page
+            },
+            onLanguageChange: function ()
+            {
+                done();
+            }
+
+        });
+    });
+
+
+
+    afterEach(function () {
+        // Restore original configuration after each test
+        jasmine.clock().uninstall();
+    });
+
+    describe('basic tests', function () {
+
+        it('should compile simple directive', function ()
+        {
+            $rootScope.testVar = 'Hello world';
+            var element = angular.element('<span tml-tr>{{testVar}}</span>');
+            element = $compile(element)($rootScope);
+            $rootScope.$digest();
+            expect(element.text()).toBe('Hello world');
+        });
+
+        it('should translate simple string', function ()
+        {
+            $rootScope.testVar = 'Hello';
+            var element = angular.element('<span tml-tr="Hello World"></span>');
+            element = $compile(element)($rootScope);
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет Mир');
+        });
+
+        it('should do number conversions with scope value', function ()
+        {
+            $rootScope.count = 0;
+            var element = angular.element('<tml-tr>Michael uploaded {count} photos</span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Майкл Загрузил 0 фотографий');
+
+            $rootScope.count = 1;
+            $rootScope.$digest();
+            expect(element.text()).toBe('Майкл Загрузил 1 фотографию');
+
+            $rootScope.count = 2;
+            $rootScope.$digest();
+            expect(element.text()).toBe('Майкл Загрузил 2 фотографии');
+
+            $rootScope.count = 5;
+            $rootScope.$digest();
+            expect(element.text()).toBe('Майкл Загрузил 5 фотографий');
+
+        });
+
+        it('should bind to nested property in tml with custom object value', function ()
+        {
+            $rootScope.logged_in = { name: "Anna" };
+
+            var element = angular.element('<tml-tr user="logged_in">Hello {user.name}</span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Anna');
+
+            $rootScope.logged_in = { name: "Boris" };
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+
+        });
+
+        xit('should bind to update to nested property in tml with custom object value', function ()
+        {
+            $rootScope.logged_in = { name: "Anna" };
+
+            var element = angular.element('<tml-tr user="logged_in">Hello {user.name}</span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Anna');
+
+            $rootScope.logged_in.name = "Boris";
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+
+        });
+
+        it('should translate with simple filter', function ()
+        {
+            var element = angular.element('<input placeholder=\'{{"Hello World" | trl}}\' />');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.attr('placeholder')).toBe('Привет Mир');
+
+        });
+
+        it('should translate with simple filter with passed scope', function ()
+        {
+            $rootScope.user = { name: "Anna" };
+            var element = angular.element('<input placeholder=\'{{ "Hello {user.name}" | trl:this }}\' />');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.attr('placeholder')).toBe('Привет, Anna');
+
+            $rootScope.user = { name: "Boris" };
+
+            $rootScope.$digest();
+            expect(element.attr('placeholder')).toBe('Привет, Boris');
+        });
+
+        it('should translate with global function with passed object', function ()
+        {
+            $rootScope.logged_in = "Anna";
+
+            var element = angular.element('<span>{{ trl("Hello {user.name}", { user: { name: logged_in } })  }}</span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Anna');
+
+            $rootScope.logged_in = "Boris";
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+        });
+
+        it('should translate with global function with scope object', function ()
+        {
+            $rootScope.user = { name: "Anna" };
+
+            var element = angular.element('<span>{{ trl("Hello {user.name}")  }}</span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Anna');
+
+            $rootScope.user = { name: "Boris" };
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+        });
+
+        it('should translate with global function with scope object 2', function ()
+        {
+            $rootScope.user = { name: "Anna" };
+
+            var element = angular.element('<span>{{ trl("Hello {user.name}")  }}</span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Anna');
+
+            $rootScope.user.name = "Boris";
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+        });
+
+        it('should translate with global function with custom proxied scope vars', function ()
+        {
+            $rootScope.pageNumber = 1;
+            $rootScope.totalPages = 50;
+
+            var element = angular.element('<span tml-tr="Load page {num} of {count}" values="{ num: pageNumber+1, count: totalPages }"></span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Загрузить страницу 2 из 50');
+
+            $rootScope.pageNumber = 2;
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Загрузить страницу 3 из 50');
+
+        });
+
+        it('should not error on unparseable property expression', function ()
+        {
+            var element = angular.element('<span tml-tr="Load page {num} of {count}" num="¯\(ツ)/¯" count="(╯°□°）╯︵ ┻━┻"></span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+
+            expect(element.text()).toBe('Загрузить страницу {num} из {count}');
+        });
+
+        it('should not error on unparseable values expression', function ()
+        {
+            var element = angular.element('<tml-tr values="(╯°□°）╯︵ ┻━┻">Load page {num} of {count}</tml-tr>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+
+            expect(element.text()).toBe('Загрузить страницу {num} из {count}');
+        });
+
+    });
+});

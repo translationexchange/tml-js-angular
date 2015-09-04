@@ -1,0 +1,33 @@
+{
+  "id": 107,
+  "version": "20150902001636",
+  "state": "generating",
+  "url": "https://trex-snapshots.s3-us-west-1.amazonaws.com/9499a0bca3ae76ba3e633475ca415947805595f6ca8214e848aab7acc4464c3e/20150902001636.tar.gz",
+  "cdn_url": "https://trex-snapshots.s3-us-west-1.amazonaws.com/9499a0bca3ae76ba3e633475ca415947805595f6ca8214e848aab7acc4464c3e/20150902001636",
+  "type": "release",
+  "progress": 100,
+  "file_size": 0,
+  "current": false,
+  "created_at": "2015-09-02 00:16:36",
+  "generated_at": "2015-09-02 00:16:36",
+  "metrics": {
+    "language_count": 2,
+    "translator_count": 1,
+    "translation_count": 18,
+    "accepted_translation_count": 11,
+    "locked_translation_count": 0,
+    "vote_count": 15,
+    "key_count": 7,
+    "translated_key_count": 6,
+    "accepted_key_count": 5,
+    "locked_key_count": 0,
+    "word_count": 29,
+    "character_count": 186,
+    "unaccepted_key_count": 2,
+    "untranslated_key_count": 1,
+    "unlocked_key_count": 7,
+    "percent_translated": 86,
+    "percent_accepted": 71,
+    "percent_locked": 0
+  }
+}

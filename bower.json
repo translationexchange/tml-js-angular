@@ -1,0 +1,25 @@
+{
+  "name": "tml-js-angular",
+  "version": "0.0.1",
+  "homepage": "https://github.com/translationexchange/tml-js-angular",
+  "moduleType": [
+    "amd"
+  ],
+  "authors": [
+    "erapoport"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "~1.4.5"
+  },
+  "devDependencies": {
+    "angular-mocks": "~1.4.5"
+  }
+}
