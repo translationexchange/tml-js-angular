@@ -1,7 +1,7 @@
 {
   "name": "tml-js-angular",
-  "version": "1.0.0",
   "description": "This adds angular directives that allow you to perform seamless and advanced translations using TML from TranslationExchange.",
+  "version": "1.0.0",
   "main": "src/tml-angular.js",
   "directories": {
     "test": "test"
