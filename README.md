@@ -1,4 +1,5 @@
-# TranslationExchange Angular directives [build status]
+# TranslationExchange Angular directives [![Build Status](https://travis-ci.org/translationexchange/tml-js.svg?branch=master)](https://travis-ci.org/translationexchange/tml-js-angular)
+
 
 This adds angular directives that allow you to perform seamless and advanced translations using TML from TranslationExchange.
 
