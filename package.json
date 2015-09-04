@@ -2,12 +2,11 @@
   "name": "tml-js-angular",
   "version": "1.0.0",
   "description": "This adds angular directives that allow you to perform seamless and advanced translations using TML from TranslationExchange.",
-  "main": "index.js",
+  "main": "src/tml-angular.js",
   "directories": {
     "test": "test"
   },
   "license": "MIT",
-  "main": "src/tml-angular.js",
   "keywords": [
     "internationalization",
     "translation",
@@ -53,6 +52,7 @@
     "jasmine-core": "2.2.0",
     "karma": "~0.12.0",
     "karma-coverage": "~0.2.0",
+    "karma-coveralls": "^1.1.2",
     "karma-jasmine": "~0.3.5",
     "karma-phantomjs-launcher": "~0.1.1",
     "karma-phantomjs-shim": "^1.1.1",

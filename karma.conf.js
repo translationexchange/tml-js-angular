@@ -9,7 +9,7 @@ module.exports = function (config) {
         //logLevel: config.LOG_DEBUG,
         browsers: ['PhantomJS'],
         autoWatch: true,
-        reporters: ['dots', 'coverage'],
+        reporters: ['dots', 'coverage', 'coveralls'],
         files: [
             { pattern: 'fixtures/**/*.json', included: false, served: true },
             'node_modules/karma-phantomjs-shim/shim.js',
