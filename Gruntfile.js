@@ -41,6 +41,10 @@ module.exports = function (grunt) {
             cb();
         });
     });
+    grunt.registerTask('installandbuild', [
+        'auto_install',
+        'build_tml_js'
+    ]);
     grunt.registerTask('test', [
         'auto_install',
         'build_tml_js',
