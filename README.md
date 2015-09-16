@@ -13,7 +13,7 @@ Learn more about [TML](http://translationexchange.com/docs/tml/basics)
 - TranslationExchange account
 
 
-## How to get it
+## Getting started
 
 You can get it from [Bower](http://bower.io/)
 
@@ -27,7 +27,7 @@ Or on [NPM](http://npmjs.org/)
 npm install tml-js-angular
 ```
 
-### Include it on your page (regular script tag)
+### Include it on your app (regular script tag)
 
 example is for bower, replace bower_components if you put it elsewhere.
 Make sure to include it after the angular script tag
@@ -35,15 +35,18 @@ Make sure to include it after the angular script tag
     <script src='bower_components/angular/angular.js'></script>
     <script src='bower_components/tml-js-angular/src/tml-angular.js'></script>
 
-### Include it on your page (AMD)
+    angular.module('app', ['tml']);
 
+### Include it on your page (browserify)
+
+    angular.module('app', [require('tml-js-angular')]);
 
 ## Usage
 
 #### As an element, with scope defined data
-    <h3>
+    
         <tml-tr>Welcome {user}</tml-tr>
-    </h3>
+    
     
 This expects a `user` key to be defined on the scope where this directive is used.
 
@@ -107,6 +110,6 @@ Pass a custom values object:
 
     {{ "Hello {user}, this is your {num} visit" | trl:{ user: logged_in_user, num: visitCounter } }}
     
-The cool thing about filters is how easy it is to combine them:
+The cool thing about filters is how easy it is to combine them (but otherwise - prefer to use the other options):
 
     <h3> {{ "Hello {user}" | trl:this | toUpper }} </h3>
