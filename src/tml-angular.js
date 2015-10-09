@@ -1,6 +1,22 @@
 (function ()
 {
     var moduleName = 'tml';
+    var tml;
+
+    if (typeof require == 'function')
+    {
+        tml = require('tml-js-browser');
+        console.log('requiring');
+    } else
+    {
+        console.log('globalling');
+        tml = {
+            tml: window.tml,
+            tr: window.tr,
+            trl: window.trl
+        }
+    };
+
     function tmlAngular(angular)
     {
         function compileTranslation($parse, scope, elem, valueStr, argsStr)
@@ -8,7 +24,7 @@
             function runTemplate(tplScope)
             {
                 //console.log('running template %s with %s', elem._template, JSON.stringify(tplScope));
-                    elem.html(window.tr(elem._template, tplScope));
+                    elem.html(tml.tr(elem._template, tplScope));
             }
 
             elem._template = valueStr;
@@ -34,7 +50,7 @@
             }
             else {
                 //get a list of token the translation needs
-                var neededScopeTokens = new window.tml.TranslationKey({label: valueStr});
+                var neededScopeTokens = new tml.tml.TranslationKey({label: valueStr});
                 var tokenNames = neededScopeTokens.getDataTokens().map(function (item)
                 {
                     return item.short_name;
@@ -109,10 +125,11 @@
             .constant('tmlConfig', {})
             .run(['$rootScope', function ($rootScope)
             {
+                $rootScope.tml = tml;
                 //translate label function
                 $rootScope.trl = function (template, values)
                 {
-                    return window.trl(template, angular.isObject(values) ? values : this);
+                    return tml.trl(template, angular.isObject(values) ? values : this);
                 }
             }])
             //main tmlTr attribute directive
@@ -144,7 +161,7 @@
             {
                 return function (template, values)
                 {
-                    return window.trl(template, values);
+                    return tml.trl(template, values);
                 }
             });
 
@@ -152,15 +169,14 @@
     }
 
     //AMD/CommonJS support
-    if (typeof define === 'function' && define.amd) {
-        define(['angular'], tmlAngular);
-    } else if (typeof module !== 'undefined' && module && module.exports) {
+    if ( typeof exports === 'object' ) {
         tmlAngular(angular);
         module.exports = moduleName;
+    } else if (typeof define === 'function' && define.amd) {
+        define(['angular'], tmlAngular);
     } else {
         tmlAngular(angular);
     }
-
 })();
 
 

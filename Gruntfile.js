@@ -19,6 +19,22 @@ module.exports = function (grunt) {
                 }
             }
         },
+
+        browserify: {
+            dist: {
+                src: ['src/tml-angular.js'],
+                dest: 'dist/tml-angular-latest.js',
+                options: {
+                    browserifyOptions: {}
+                }
+            }
+        },
+        clean: {
+            options: {
+                force: true
+            },
+            build: ["./dist/**", "./node_modules/tml-js-browser/dist/*"]
+        },
         karma: {
             unit: {
                 configFile: 'karma.conf.js',
@@ -43,15 +59,21 @@ module.exports = function (grunt) {
     });
     grunt.registerTask('installandbuild', [
         'auto_install',
-        'build_tml_js'
+        'clean',
+        'build_tml_js',
+        'browserify'
     ]);
     grunt.registerTask('test', [
         'auto_install',
+        'clean',
         'build_tml_js',
+        'browserify',
         'karma'
     ]);
     grunt.registerTask('buildandtest', [
+        'clean',
         'build_tml_js',
+        'browserify',
         'karma'
     ]);
     grunt.registerTask('justtest', [
