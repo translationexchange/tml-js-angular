@@ -18,13 +18,13 @@ Learn more about [TML](http://translationexchange.com/docs/tml/basics)
 You can get it from [Bower](http://bower.io/)
 
 ```sh
-bower install tml-js-angular
+bower install tml-angular
 ```
 
 Or on [NPM](http://npmjs.org/)
 
 ```sh
-npm install tml-js-angular
+npm install tml-angular
 ```
 
 ### Include it on your app (regular script tag)
@@ -33,13 +33,13 @@ example is for bower, replace bower_components if you put it elsewhere.
 Make sure to include it after the angular script tag
 
     <script src='bower_components/angular/angular.js'></script>
-    <script src='bower_components/tml-js-angular/src/tml-angular.js'></script>
+    <script src='bower_components/tml-angular/src/tml-angular.js'></script>
 
     angular.module('app', ['tml']);
 
 ### Include it on your page (browserify)
 
-    angular.module('app', [require('tml-js-angular')]);
+    angular.module('app', [require('tml-angular')]);
 
 ## Usage
 

@@ -6,18 +6,19 @@
     if (typeof require == 'function')
     {
         tml = require('tml-js-browser');
-    } else
+    } 
+    else
     {
         tml = {
             tml: window.tml,
             tr: window.tr,
             trl: window.trl
         }
-    };
+    }
 
     function tmlAngular(angular)
     {
-        function compileTranslation($parse, scope, elem, valueStr, argsStr)
+        function compileTranslation($parse, $rootScope, scope, elem, valueStr, argsStr)
         {
             function runTemplate(tplScope)
             {
@@ -26,6 +27,8 @@
             }
 
             elem._template = valueStr;
+
+            
 
             var args = argsStr;
             if (args && angular.isString(args)) {
@@ -43,8 +46,18 @@
                         runTemplate(newVal);
                     }, true);
                 }
-
-                runTemplate(parsedArgs ? parsedArgs(scope) : {});
+                
+                $rootScope.$on('language-change', function (language)
+                {
+                    performTranslation(); 
+                });
+                
+                function performTranslation()
+                {
+                    runTemplate(parsedArgs ? parsedArgs(scope) : {});
+                }
+                
+                performTranslation();
             }
             else {
                 //get a list of token the translation needs
@@ -108,12 +121,23 @@
                     )
                 });
 
-                scope.$watch('[' + tokenNames.join(', ') + ']', function (newValuesArr, oldValuesArr)
+
+                $rootScope.$on('language-change', function (language)
+                {
+                    performTranslation();
+                });
+
+                function performTranslation()
                 {
                     runTemplate(simpleTokenProxy);
+                }
+                
+                scope.$watch('[' + tokenNames.join(', ') + ']', function (newValuesArr, oldValuesArr)
+                {
+                    performTranslation();
                 }, true);
 
-                runTemplate(simpleTokenProxy);
+                performTranslation();
 
             }
         }
@@ -128,29 +152,35 @@
                 $rootScope.trl = function (template, values)
                 {
                     return tml.trl(template, angular.isObject(values) ? values : this);
-                }
+                };
+                
+                tml.tml.on('language-change', function (language)
+                {
+                    $rootScope.$emit('language-change', language);
+                });
+                
             }])
             //main tmlTr attribute directive
-            .directive('tmlTr', ['tmlConfig', '$parse', function (tmlConfig, $parse)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
             {
                 return {
                     scope: true,
                     restrict: 'A',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, scope, elm, attrs.tmlTr || elm.html(), attrs.values);
+                        compileTranslation($parse, $rootScope, scope, elm, attrs.tmlTr || elm.html(), attrs.values);
                     }
                 }
             }])
             //main tmlTr element directive
-            .directive('tmlTr', ['tmlConfig', '$parse', function (tmlConfig, $parse)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
             {
                 return {
                     scope: true,
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, scope, elm, attrs.translateStr || elm.html(), attrs.values);
+                        compileTranslation($parse, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
                     }
                 }
             }])
@@ -161,7 +191,17 @@
                 {
                     return tml.trl(template, values);
                 }
-            });
+            })
+            .directive('tmlLs', [function ()
+            {
+                return function (scope, element, attrs)
+                {
+                    attrs.$set('data-tml-language-selector', attrs.tmlLs);
+                    attrs.$set('data-tml-language-selector-element', attrs.selectorElement);
+                    attrs.$set('data-tml-toggle', 'true');
+                    tml.tml.updateLanguageSelector();
+                };
+            }]);
 
         return app;
     }
