@@ -1800,18 +1800,19 @@ module.exports = isArray || function (val) {
     if (typeof require == 'function')
     {
         tml = require('tml-js-browser');
-    } else
+    } 
+    else
     {
         tml = {
             tml: window.tml,
             tr: window.tr,
             trl: window.trl
         }
-    };
+    }
 
     function tmlAngular(angular)
     {
-        function compileTranslation($parse, scope, elem, valueStr, argsStr)
+        function compileTranslation($parse, $rootScope, scope, elem, valueStr, argsStr)
         {
             function runTemplate(tplScope)
             {
@@ -1820,6 +1821,8 @@ module.exports = isArray || function (val) {
             }
 
             elem._template = valueStr;
+
+            
 
             var args = argsStr;
             if (args && angular.isString(args)) {
@@ -1837,8 +1840,18 @@ module.exports = isArray || function (val) {
                         runTemplate(newVal);
                     }, true);
                 }
-
-                runTemplate(parsedArgs ? parsedArgs(scope) : {});
+                
+                $rootScope.$on('language-change', function (language)
+                {
+                    performTranslation(); 
+                });
+                
+                function performTranslation()
+                {
+                    runTemplate(parsedArgs ? parsedArgs(scope) : {});
+                }
+                
+                performTranslation();
             }
             else {
                 //get a list of token the translation needs
@@ -1902,12 +1915,23 @@ module.exports = isArray || function (val) {
                     )
                 });
 
-                scope.$watch('[' + tokenNames.join(', ') + ']', function (newValuesArr, oldValuesArr)
+
+                $rootScope.$on('language-change', function (language)
+                {
+                    performTranslation();
+                });
+
+                function performTranslation()
                 {
                     runTemplate(simpleTokenProxy);
+                }
+                
+                scope.$watch('[' + tokenNames.join(', ') + ']', function (newValuesArr, oldValuesArr)
+                {
+                    performTranslation();
                 }, true);
 
-                runTemplate(simpleTokenProxy);
+                performTranslation();
 
             }
         }
@@ -1922,29 +1946,35 @@ module.exports = isArray || function (val) {
                 $rootScope.trl = function (template, values)
                 {
                     return tml.trl(template, angular.isObject(values) ? values : this);
-                }
+                };
+                
+                tml.tml.on('language-change', function (language)
+                {
+                    $rootScope.$emit('language-change', language);
+                });
+                
             }])
             //main tmlTr attribute directive
-            .directive('tmlTr', ['tmlConfig', '$parse', function (tmlConfig, $parse)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
             {
                 return {
                     scope: true,
                     restrict: 'A',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, scope, elm, attrs.tmlTr || elm.html(), attrs.values);
+                        compileTranslation($parse, $rootScope, scope, elm, attrs.tmlTr || elm.html(), attrs.values);
                     }
                 }
             }])
             //main tmlTr element directive
-            .directive('tmlTr', ['tmlConfig', '$parse', function (tmlConfig, $parse)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
             {
                 return {
                     scope: true,
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, scope, elm, attrs.translateStr || elm.html(), attrs.values);
+                        compileTranslation($parse, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
                     }
                 }
             }])
@@ -1955,7 +1985,17 @@ module.exports = isArray || function (val) {
                 {
                     return tml.trl(template, values);
                 }
-            });
+            })
+            .directive('tmlLs', [function ()
+            {
+                return function (scope, element, attrs)
+                {
+                    attrs.$set('data-tml-language-selector', attrs.tmlLs);
+                    attrs.$set('data-tml-language-selector-element', attrs.selectorElement);
+                    attrs.$set('data-tml-toggle', 'true');
+                    tml.tml.updateLanguageSelector();
+                };
+            }]);
 
         return app;
     }
@@ -2109,7 +2149,7 @@ Ajax.prototype = tml.utils.extend(new tml.ApiAdapterBase(), {
 });
 
 module.exports = Ajax;
-},{"tml-js":31}],7:[function(require,module,exports){
+},{"tml-js":32}],7:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -2287,7 +2327,7 @@ Browser.prototype = tml.utils.extend(new tml.CacheAdapterBase(), {
 });
 
 module.exports = Browser;
-},{"tml-js":31}],8:[function(require,module,exports){
+},{"tml-js":32}],8:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -2422,7 +2462,7 @@ Inline.prototype = tml.utils.extend(new tml.CacheAdapterBase(), {
 });
 
 module.exports = Inline;
-},{"tml-js":31}],9:[function(require,module,exports){
+},{"tml-js":32}],9:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -2622,7 +2662,7 @@ module.exports = {
   setCookie:            helpers.setCookie,
   includeAgent:         helpers.includeAgent
 };
-},{"tml-js":31}],10:[function(require,module,exports){
+},{"tml-js":32}],10:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -2690,15 +2730,23 @@ module.exports = {
 }(window, function() {
 
     var tml          = require('tml-js');
+    var Emitter       = require('tiny-emitter');
+    var emitter       = new Emitter();
     var helpers       = require('./helpers');
     var DomTokenizer  = require('./tokenizers/dom');
 
     var DEFAULT_HOST  = "https://api.translationexchange.com";
     var mutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-
+  
+  
     tml = tml.utils.extend(tml, {
       version: '0.4.3',
 
+      on: emitter.on.bind(emitter),
+      off: emitter.off.bind(emitter),
+      once: emitter.once.bind(emitter),
+      emit: emitter.emit.bind(emitter),
+      
       app:            null,
       block_options:  [],
       root_element:   null,
@@ -2896,6 +2944,8 @@ module.exports = {
 
           if (tml.utils.isFunction(tml.options.onLanguageChange))
             tml.options.onLanguageChange(language);
+          
+          tml.emit('language-change', language);
         }.bind(this));
       },
 
@@ -3191,7 +3241,7 @@ module.exports = {
     };
   }
 ));
-},{"./api_adapters/ajax":6,"./cache_adapters/browser":7,"./cache_adapters/inline":8,"./helpers":9,"./tokenizers/dom":11,"tml-js":31}],11:[function(require,module,exports){
+},{"./api_adapters/ajax":6,"./cache_adapters/browser":7,"./cache_adapters/inline":8,"./helpers":9,"./tokenizers/dom":11,"tiny-emitter":12,"tml-js":32}],11:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -3743,7 +3793,75 @@ DomTokenizer.prototype = {
 
 module.exports = DomTokenizer;
 
-},{"tml-js":31}],12:[function(require,module,exports){
+},{"tml-js":32}],12:[function(require,module,exports){
+function E () {
+	// Keep this empty so it's easier to inherit from
+  // (via https://github.com/lipsmack from https://github.com/scottcorgan/tiny-emitter/issues/3)
+}
+
+E.prototype = {
+	on: function (name, callback, ctx) {
+    var e = this.e || (this.e = {});
+
+    (e[name] || (e[name] = [])).push({
+      fn: callback,
+      ctx: ctx
+    });
+
+    return this;
+  },
+
+  once: function (name, callback, ctx) {
+    var self = this;
+    function listener () {
+      self.off(name, listener);
+      callback.apply(ctx, arguments);
+    };
+
+    listener._ = callback
+    return this.on(name, listener, ctx);
+  },
+
+  emit: function (name) {
+    var data = [].slice.call(arguments, 1);
+    var evtArr = ((this.e || (this.e = {}))[name] || []).slice();
+    var i = 0;
+    var len = evtArr.length;
+
+    for (i; i < len; i++) {
+      evtArr[i].fn.apply(evtArr[i].ctx, data);
+    }
+
+    return this;
+  },
+
+  off: function (name, callback) {
+    var e = this.e || (this.e = {});
+    var evts = e[name];
+    var liveEvents = [];
+
+    if (evts && callback) {
+      for (var i = 0, len = evts.length; i < len; i++) {
+        if (evts[i].fn !== callback && evts[i].fn._ !== callback)
+          liveEvents.push(evts[i]);
+      }
+    }
+
+    // Remove event from queue to prevent memory leak
+    // Suggested by https://github.com/lazd
+    // Ref: https://github.com/scottcorgan/tiny-emitter/commit/c6ebfaa9bc973b33d110a84a307742b7cf94c953#commitcomment-5024910
+
+    (liveEvents.length)
+      ? e[name] = liveEvents
+      : delete e[name];
+
+    return this;
+  }
+};
+
+module.exports = E;
+
+},{}],13:[function(require,module,exports){
 module.exports = {
 
   enabled: true,
@@ -3908,7 +4026,7 @@ module.exports = {
   }
 
 };
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -3978,7 +4096,7 @@ Base.prototype = {
 };
 
 module.exports = Base;
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -4236,7 +4354,7 @@ ApiClient.prototype = {
 
 module.exports = ApiClient;
 
-},{"./api_adapters/base":13,"./configuration":18,"./logger":26,"./utils":41}],15:[function(require,module,exports){
+},{"./api_adapters/base":14,"./configuration":19,"./logger":27,"./utils":42}],16:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -4831,7 +4949,7 @@ Application.prototype = {
 
 module.exports = Application;
 
-},{"./api_client":14,"./configuration":18,"./language":21,"./logger":26,"./source":30,"./utils":41}],16:[function(require,module,exports){
+},{"./api_client":15,"./configuration":19,"./language":22,"./logger":27,"./source":31,"./utils":42}],17:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -5020,7 +5138,7 @@ Cache.prototype = {
 };
 
 module.exports = Cache;
-},{"./cache_adapters/base":17,"./configuration":18,"./utils":41}],17:[function(require,module,exports){
+},{"./cache_adapters/base":18,"./configuration":19,"./utils":42}],18:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -5189,7 +5307,7 @@ Base.prototype = {
 };
 
 module.exports = Base;
-},{"../configuration":18,"../logger":26,"../utils":41}],18:[function(require,module,exports){
+},{"../configuration":19,"../logger":27,"../utils":42}],19:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -5421,7 +5539,7 @@ module.exports = new Configuration();
 
 
 
-},{"./../config/config.js":12,"./cache":16,"./utils":41}],19:[function(require,module,exports){
+},{"./../config/config.js":13,"./cache":17,"./utils":42}],20:[function(require,module,exports){
 (function (Buffer){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
@@ -5594,7 +5712,7 @@ module.exports = HTMLDecorator;
 
 
 }).call(this,require("buffer").Buffer)
-},{"../utils":41,"buffer":1}],20:[function(require,module,exports){
+},{"../utils":42,"buffer":1}],21:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -6223,7 +6341,7 @@ module.exports = {
   language_selector: scripts.language_selector,
   language_selector_init: scripts.language_selector_init
 };
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -6376,7 +6494,7 @@ Language.prototype = {
 
 module.exports = Language;
 
-},{"./configuration":18,"./language_case":22,"./language_context":24,"./translation_key":39,"./utils":41}],22:[function(require,module,exports){
+},{"./configuration":19,"./language_case":23,"./language_context":25,"./translation_key":40,"./utils":42}],23:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -6493,7 +6611,7 @@ LanguageCase.prototype = {
 module.exports = LanguageCase;
 
 
-},{"./configuration":18,"./decorators/html":19,"./language_case_rule":23,"./utils":41}],23:[function(require,module,exports){
+},{"./configuration":19,"./decorators/html":20,"./language_case_rule":24,"./utils":42}],24:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -6592,7 +6710,7 @@ LanguageCaseRule.prototype = {
 
 module.exports = LanguageCaseRule;
 
-},{"./rules_engine/evaluator":28,"./rules_engine/parser":29,"./utils":41}],24:[function(require,module,exports){
+},{"./rules_engine/evaluator":29,"./rules_engine/parser":30,"./utils":42}],25:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -6711,7 +6829,7 @@ LanguageContext.prototype = {
 };
 
 module.exports = LanguageContext;
-},{"./configuration":18,"./language_context_rule":25,"./utils":41}],25:[function(require,module,exports){
+},{"./configuration":19,"./language_context_rule":26,"./utils":42}],26:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -6782,7 +6900,7 @@ LanguageContextRule.prototype = {
 };
 
 module.exports = LanguageContextRule;
-},{"./rules_engine/evaluator":28,"./rules_engine/parser":29,"./utils":41}],26:[function(require,module,exports){
+},{"./rules_engine/evaluator":29,"./rules_engine/parser":30,"./utils":42}],27:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -6848,7 +6966,7 @@ var Logger = {
 };
 
 module.exports = Logger;
-},{"./configuration":18,"./utils":41}],27:[function(require,module,exports){
+},{"./configuration":19,"./utils":42}],28:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -7091,7 +7209,7 @@ var MD5 = function (string) {
 };
 
 module.exports = MD5;
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -7282,7 +7400,7 @@ Evaluator.prototype = {
 
 module.exports = Evaluator;
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -7342,7 +7460,7 @@ Parser.prototype = {
 };
 
 module.exports = Parser;
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -7429,7 +7547,7 @@ Source.prototype = {
 };
 
 module.exports = Source;
-},{"./configuration":18,"./translation":38,"./utils":41}],31:[function(require,module,exports){
+},{"./configuration":19,"./translation":39,"./utils":42}],32:[function(require,module,exports){
 
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
@@ -7518,7 +7636,7 @@ module.exports = Tml;
 
 
 
-},{"./api_adapters/base":13,"./application":15,"./cache_adapters/base":17,"./configuration":18,"./helpers/scripts":20,"./language":21,"./language_case":22,"./language_case_rule":23,"./language_context":24,"./language_context_rule":25,"./logger":26,"./source":30,"./tokenizers/dom":34,"./translation":38,"./translation_key":39,"./translator":40,"./utils":41}],32:[function(require,module,exports){
+},{"./api_adapters/base":14,"./application":16,"./cache_adapters/base":18,"./configuration":19,"./helpers/scripts":21,"./language":22,"./language_case":23,"./language_case_rule":24,"./language_context":25,"./language_context_rule":26,"./logger":27,"./source":31,"./tokenizers/dom":35,"./translation":39,"./translation_key":40,"./translator":41,"./utils":42}],33:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -7610,7 +7728,7 @@ DataTokenizer.prototype = {
 };
 
 module.exports = DataTokenizer;
-},{"../configuration":18,"../tokens/data":35,"../tokens/method":36,"../tokens/piped":37}],33:[function(require,module,exports){
+},{"../configuration":19,"../tokens/data":36,"../tokens/method":37,"../tokens/piped":38}],34:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -7810,7 +7928,7 @@ DecorationTokenizer.prototype = {
 
 
 module.exports = DecorationTokenizer;
-},{"../configuration":18,"../utils":41}],34:[function(require,module,exports){
+},{"../configuration":19,"../utils":42}],35:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -8288,7 +8406,7 @@ DomTokenizer.prototype = {
 };
 
 module.exports = DomTokenizer;
-},{"../configuration":18,"../utils":41}],35:[function(require,module,exports){
+},{"../configuration":19,"../utils":42}],36:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -8669,7 +8787,7 @@ DataToken.prototype = {
 };
 
 module.exports = DataToken;
-},{"../configuration":18,"../decorators/html":19,"../logger":26,"../utils":41}],36:[function(require,module,exports){
+},{"../configuration":19,"../decorators/html":20,"../logger":27,"../utils":42}],37:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -8760,7 +8878,7 @@ MethodToken.prototype.getDecorationName = function() {
 module.exports = MethodToken;
 
 
-},{"../decorators/html":19,"../utils":41,"./data":35}],37:[function(require,module,exports){
+},{"../decorators/html":20,"../utils":42,"./data":36}],38:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -9026,7 +9144,7 @@ PipedToken.prototype.getDecorationName = function() {
 module.exports = PipedToken;
 
 
-},{"../decorators/html":19,"../utils":41,"./data":35}],38:[function(require,module,exports){
+},{"../decorators/html":20,"../utils":42,"./data":36}],39:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -9118,7 +9236,7 @@ module.exports = Translation;
 
 
 
-},{"./tokens/data":35,"./utils":41}],39:[function(require,module,exports){
+},{"./tokens/data":36,"./utils":42}],40:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -9313,7 +9431,7 @@ TranslationKey.prototype = {
 module.exports = TranslationKey;
 
 
-},{"./configuration":18,"./decorators/html":19,"./tokenizers/data":32,"./tokenizers/decoration":33,"./translation":38,"./utils":41}],40:[function(require,module,exports){
+},{"./configuration":19,"./decorators/html":20,"./tokenizers/data":33,"./tokenizers/decoration":34,"./translation":39,"./utils":42}],41:[function(require,module,exports){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
  *
@@ -9367,7 +9485,7 @@ Translator.prototype = {
 
 module.exports = Translator;
 
-},{"./utils":41}],41:[function(require,module,exports){
+},{"./utils":42}],42:[function(require,module,exports){
 (function (Buffer){
 /**
  * Copyright (c) 2015 Translation Exchange, Inc.
@@ -9720,4 +9838,4 @@ module.exports = {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./md5":27,"buffer":1}]},{},[5]);
+},{"./md5":28,"buffer":1}]},{},[5]);
