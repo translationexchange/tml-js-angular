@@ -6,10 +6,8 @@
     if (typeof require == 'function')
     {
         tml = require('tml-js-browser');
-        console.log('requiring');
     } else
     {
-        console.log('globalling');
         tml = {
             tml: window.tml,
             tr: window.tr,

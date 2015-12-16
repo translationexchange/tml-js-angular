@@ -23,7 +23,7 @@ module.exports = function (grunt) {
         browserify: {
             dist: {
                 src: ['src/tml-angular.js'],
-                dest: 'dist/tml-angular-latest.js',
+                dest: 'dist/tml-angular.js',
                 options: {
                     browserifyOptions: {}
                 }
