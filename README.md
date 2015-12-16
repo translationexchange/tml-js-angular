@@ -113,3 +113,26 @@ Pass a custom values object:
 The cool thing about filters is how easy it is to combine them (but otherwise - prefer to use the other options):
 
     <h3> {{ "Hello {user}" | trl:this | toUpper }} </h3>
+    
+### Accessing current language options ###
+
+There are a few useful properties exposed on the `$rootScope`:
+
+`currentLocale` - Language specific stylesheets
+
+Dynamically replace the stylesheet based on locale of the language
+
+     <link rel='stylesheet' href="/stylesheets/style-{{currentLocale}}.css"/>
+     
+Show a block for a specific locale
+
+     <h5 ng-if="{{currentLocale == 'fr'}}">Hello French Speakers</h5> 
+
+`isRtl` - Right to left stylesheets
+
+Dynamically replace the stylesheet based on direction of the language
+
+     <link rel='stylesheet' href="/stylesheets/style{{isRtl ? '.rtl' : ''}}.css"/>
+     
+     
+     
