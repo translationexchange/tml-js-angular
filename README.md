@@ -113,7 +113,8 @@ Pass a custom values object:
 The cool thing about filters is how easy it is to combine them (but otherwise - prefer to use the other options):
 
     <h3> {{ "Hello {user}" | trl:this | toUpper }} </h3>
-    
+
+<a name="language-options"></a>
 ### Accessing current language options ###
 
 There are a few useful properties exposed on the `$rootScope`:
