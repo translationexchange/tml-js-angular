@@ -153,11 +153,21 @@
                 {
                     return tml.trl(template, angular.isObject(values) ? values : this);
                 };
+
+                function setLanguage(language)
+                {
+                    $rootScope.currentLanguage = language;
+                    $rootScope.currentLocale = language.locale;
+                    $rootScope.isRtl = !!language.right_to_left;
+                }
                 
                 tml.tml.on('language-change', function (language)
                 {
                     $rootScope.$emit('language-change', language);
+                    setLanguage(language);
                 });
+                
+                $rootScope.$watch('tml.tml.getCurrentLanguage()', setLanguage);
                 
             }])
             //main tmlTr attribute directive
