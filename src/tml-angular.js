@@ -165,6 +165,7 @@
                 {
                     $rootScope.$emit('language-change', language);
                     setLanguage(language);
+                    $rootScope.$digest();
                 });
                 
                 $rootScope.$watch('tml.tml.getCurrentLanguage()', setLanguage);
@@ -175,10 +176,12 @@
             {
                 return {
                     scope: true,
+                    //priority: 10,
                     restrict: 'A',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, $rootScope, scope, elm, attrs.tmlTr || elm.html(), attrs.values);
+                        var value = attrs.tmlTr || elm.html();
+                        compileTranslation($parse, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
             }])
@@ -187,6 +190,7 @@
             {
                 return {
                     scope: true,
+                    //priority: 10,
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
