@@ -180,7 +180,7 @@
                     restrict: 'A',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        var value = attrs.tmlTr || elm.html();
+                        var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
                         compileTranslation($parse, $rootScope, scope, elm, value, attrs.values);
                     }
                 }

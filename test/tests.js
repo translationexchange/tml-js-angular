@@ -73,6 +73,15 @@ describe('module tmlTr', function () {
             expect(element.text()).toBe('Hello world');
         });
 
+        it('should compile simple directive 2', function ()
+        {
+            $rootScope.player = {rank:1, name:'Michael'};
+            var element = angular.element('<span tml-tr="tml-tr" name="player.name" rank="\'#\' + player.rank">{name}, you\'re ranked {rank}</span>');
+            element = $compile(element)($rootScope);
+            $rootScope.$digest();
+            expect(element.text()).toBe('Michael, you\'re ranked #1');
+        });
+
         it('should translate simple string', function ()
         {
             $rootScope.testVar = 'Hello';
