@@ -1947,11 +1947,22 @@ module.exports = isArray || function (val) {
                 {
                     return tml.trl(template, angular.isObject(values) ? values : this);
                 };
+
+                function setLanguage(language)
+                {
+                    $rootScope.currentLanguage = language;
+                    $rootScope.currentLocale = language.locale;
+                    $rootScope.isRtl = !!language.right_to_left;
+                }
                 
                 tml.tml.on('language-change', function (language)
                 {
                     $rootScope.$emit('language-change', language);
+                    setLanguage(language);
+                    $rootScope.$digest();
                 });
+                
+                $rootScope.$watch('tml.tml.getCurrentLanguage()', setLanguage);
                 
             }])
             //main tmlTr attribute directive
@@ -1959,10 +1970,12 @@ module.exports = isArray || function (val) {
             {
                 return {
                     scope: true,
+                    //priority: 10,
                     restrict: 'A',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, $rootScope, scope, elm, attrs.tmlTr || elm.html(), attrs.values);
+                        var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
+                        compileTranslation($parse, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
             }])
@@ -1971,6 +1984,7 @@ module.exports = isArray || function (val) {
             {
                 return {
                     scope: true,
+                    //priority: 10,
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
@@ -2713,14 +2727,14 @@ module.exports = {
     }
   }
 
-  if ( typeof define === 'function' && define.amd ) {
-    console.log('amd load');
-    define( [], factory );
-  }
-  else if ( typeof exports === 'object' ) {
+  if ( typeof exports === 'object' ) {
     console.log('exports load', module);
     module.exports = factory();
     addToRoot(module.exports);
+  }
+  else if ( typeof define === 'function' && define.amd ) {
+    console.log('amd load');
+    define( [], factory );
   }
   else
   {
@@ -2737,8 +2751,7 @@ module.exports = {
 
     var DEFAULT_HOST  = "https://api.translationexchange.com";
     var mutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-  
-  
+
     tml = tml.utils.extend(tml, {
       version: '0.4.3',
 
@@ -2859,7 +2872,8 @@ module.exports = {
                 cache:    options.agent.cache,
                 domains:  options.agent.domains || {},
                 locale:   options.current_locale,
-                source:   options.current_source
+                source:   options.current_source,
+                languages: tml.app.languages
               }, function () {
                 if (callback) callback();
               });
@@ -2872,6 +2886,7 @@ module.exports = {
             if (typeof(options.onLoad) == "function") {
               options.onLoad(tml.app);
             }
+            tml.emit('load', tml.app);
           });
 
           // if version is hardcoded - don't bother checking the version
@@ -2905,6 +2920,7 @@ module.exports = {
        * Updates language selector
        */
       updateLanguageSelector: function() {
+        return;
         var languageSelector = document.querySelectorAll("[data-tml-language-selector], [tml-language-selector]");
 
         if (languageSelector.length === 0) return;
