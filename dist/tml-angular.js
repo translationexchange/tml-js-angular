@@ -1951,7 +1951,8 @@ module.exports = isArray || function (val) {
                 function setLanguage(language)
                 {
                     $rootScope.currentLanguage = language;
-                    delete $rootScope.currentLanguage.application;
+                    if ($rootScope.currentLanguage)
+                        delete $rootScope.currentLanguage.application;
                     $rootScope.currentLocale = language.locale;
                     $rootScope.isRtl = !!language.right_to_left;
                 }
