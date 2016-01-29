@@ -156,9 +156,13 @@
 
                 function setLanguage(language)
                 {
-                    $rootScope.currentLanguage = language;
-                    $rootScope.currentLocale = language.locale;
-                    $rootScope.isRtl = !!language.right_to_left;
+                    if (language)
+                    {
+                        $rootScope.currentLanguage = language;
+                        delete $rootScope.currentLanguage.application;
+                        $rootScope.currentLocale = language.locale;
+                        $rootScope.isRtl = !!language.right_to_left;
+                    }
                 }
                 
                 tml.tml.on('language-change', function (language)
@@ -169,6 +173,8 @@
                 });
                 
                 $rootScope.$watch('tml.tml.getCurrentLanguage()', setLanguage);
+                
+                setLanguage(tml.tml.getCurrentLanguage());
                 
             }])
             //main tmlTr attribute directive
