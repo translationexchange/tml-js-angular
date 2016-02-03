@@ -174,7 +174,13 @@
                 
                 $rootScope.$watch('tml.tml.getCurrentLanguage()', setLanguage);
                 
-                setLanguage(tml.tml.getCurrentLanguage());
+                try
+                {
+                    setLanguage(tml.tml.getCurrentLanguage());
+                }
+                catch(er)
+                {
+                }
                 
             }])
             //main tmlTr attribute directive
@@ -219,7 +225,11 @@
                     attrs.$set('data-tml-language-selector', attrs.tmlLs);
                     attrs.$set('data-tml-language-selector-element', attrs.selectorElement);
                     attrs.$set('data-tml-toggle', 'true');
-                    tml.tml.updateLanguageSelector();
+                    
+                    if (Trex && Trex.language_selectors && Trex.language_selectors.transformElem)
+                    {
+                        Trex.language_selectors.transformElem(element[0]);
+                    }
                 };
             }]);
 
