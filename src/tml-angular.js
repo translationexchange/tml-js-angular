@@ -1,21 +1,8 @@
 (function ()
 {
     var moduleName = 'tml';
-    var tml;
-
-    if (typeof require == 'function')
-    {
-        tml = require('tml-js-browser');
-    } 
-    else
-    {
-        tml = {
-            tml: window.tml,
-            tr: window.tr,
-            trl: window.trl
-        }
-    }
-
+    var tml = require('tml-js-browser');
+    
     function tmlAngular(angular)
     {
         function compileTranslation($parse, $rootScope, scope, elem, valueStr, argsStr)
