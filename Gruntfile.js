@@ -64,7 +64,7 @@ module.exports = function (grunt) {
         'browserify'
     ]);
     grunt.registerTask('test', [
-        'auto_install',
+        //'auto_install',
         'clean',
         'build_tml_js',
         'browserify',

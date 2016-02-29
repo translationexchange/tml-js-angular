@@ -16,7 +16,7 @@ module.exports = function (config) {
             'bower_components/angular/angular.js',
             'bower_components/angular-mocks/angular-mocks.js',
             'node_modules/tml-js-browser/dist/*.js',
-            'src/tml-angular.js',
+            'dist/tml-angular.js',
             'test/tests.js'
         ],
         exclude: [

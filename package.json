@@ -47,6 +47,7 @@
   },
   "homepage": "https://github.com/translationexchange/tml-js-angular",
   "dependencies": {
+    "tml-js": "~0.4.22",
     "tml-js-browser": "~0.4.31"
   },
   "devDependencies": {
