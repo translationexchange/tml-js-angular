@@ -1,34 +1,20 @@
 (function ()
 {
     var moduleName = 'tml';
-    var tml;
-
-    if (typeof require == 'function')
-    {
-        tml = require('tml-js-browser');
-    } 
-    else
-    {
-        tml = {
-            tml: window.tml,
-            tr: window.tr,
-            trl: window.trl
-        }
-    }
+    var tml = require('tml-js-browser');
 
     function tmlAngular(angular)
     {
-        function compileTranslation($parse, $rootScope, scope, elem, valueStr, argsStr)
+        function compileTranslation($parse, $compile, $rootScope, scope, elem, valueStr, argsStr)
         {
             function runTemplate(tplScope)
             {
                 //console.log('running template %s with %s', elem._template, JSON.stringify(tplScope));
-                    elem.html(tml.tr(elem._template, tplScope));
+                elem.html(tml.tr(elem._template, tplScope));
+                $compile(angular.element(elem).contents())(scope);
             }
 
             elem._template = valueStr;
-
-            
 
             var args = argsStr;
             if (args && angular.isString(args)) {
@@ -184,7 +170,7 @@
                 
             }])
             //main tmlTr attribute directive
-            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$compile', '$rootScope', function (tmlConfig, $parse, $compile, $rootScope)
             {
                 return {
                     scope: true,
@@ -193,12 +179,12 @@
                     link: function (scope, elm, attrs, ctrl)
                     {
                         var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
-                        compileTranslation($parse, $rootScope, scope, elm, value, attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
             }])
             //main tmlTr element directive
-            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$compile', '$rootScope', function (tmlConfig, $parse, $compile, $rootScope)
             {
                 return {
                     scope: true,
@@ -206,7 +192,7 @@
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
                     }
                 }
             }])
