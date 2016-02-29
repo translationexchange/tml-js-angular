@@ -13,8 +13,8 @@ module.exports = function (config) {
         files: [
             { pattern: 'fixtures/**/*.json', included: false, served: true },
             'node_modules/karma-phantomjs-shim/shim.js',
-            'bower_components/angular/angular.js',
-            'bower_components/angular-mocks/angular-mocks.js',
+            'node_modules/angular/angular.js',
+            'node_modules/angular-mocks/angular-mocks.js',
             'node_modules/tml-js-browser/dist/*.js',
             'dist/tml-angular.js',
             'test/tests.js'
