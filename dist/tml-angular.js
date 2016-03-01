@@ -10449,8 +10449,32 @@ module.exports = Array.isArray || function (arr) {
         {
             function runTemplate(tplScope)
             {
-                //console.log('running template %s with %s', elem._template, JSON.stringify(tplScope));
-                elem.html(tml.tr(elem._template, tplScope));
+                var params = {}, sKeys;
+                tplScope = tplScope || {};
+                sKeys = Object.keys(tplScope);
+                for (var i = 0; i < sKeys.length; i++)
+                {
+                    var key = sKeys[i];
+                    var value = tplScope[key]; 
+                    if( Object.prototype.toString.call( value ) === '[object Array]' )
+                    {
+                        var paramVal = [value];
+                        
+                        if (tplScope[key + '-format'])
+                            paramVal[1] = tplScope[key + '-format'];
+
+                        if (tplScope[key + '-options'])
+                            paramVal[2] = tplScope[key + '-options'];
+                        
+                        params[key] = paramVal;
+                    }
+                    else
+                    {
+                        params[key] = value;
+                    }
+                }
+                //console.log('running template %s with %s', elem._template, JSON.stringify(params));
+                elem.html(tml.tr(elem._template, params));
                 $compile(angular.element(elem).contents())(scope);
             }
 
@@ -10485,13 +10509,22 @@ module.exports = Array.isArray || function (arr) {
                 
                 performTranslation();
             }
-            else {
+            else 
+            {
                 //get a list of token the translation needs
                 var neededScopeTokens = new tml.tml.TranslationKey({label: valueStr});
                 var tokenNames = neededScopeTokens.getDataTokens().map(function (item)
                 {
                     return item.short_name;
                 });
+                var newNames = [];
+                for (var i = 0; i < tokenNames.length; i++)
+                {
+                    var obj = tokenNames[i];
+                    newNames.push(obj + '-format');
+                    newNames.push(obj + '-options');
+                }
+                tokenNames = tokenNames.concat(newNames);
 
                 var simpleTokenProxy = {
                     ____store: {}
@@ -10525,7 +10558,10 @@ module.exports = Array.isArray || function (arr) {
 
                             try {
                                 if (attrVal) {
-                                    return $parse(attrVal)(scope);
+                                    var parsed = $parse(attrVal)
+                                    if (parsed.literal)
+                                        stopWatching();
+                                    return parsed(scope);
                                 }
                             }
                             catch (err) {
