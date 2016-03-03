@@ -33,20 +33,43 @@
 {
     var moduleName = 'tml';
     var tml = require('tml-js-browser');
-    
+
     function tmlAngular(angular)
     {
-        function compileTranslation($parse, $rootScope, scope, elem, valueStr, argsStr)
+        function compileTranslation($parse, $compile, $rootScope, scope, elem, valueStr, argsStr)
         {
             function runTemplate(tplScope)
             {
-                //console.log('running template %s with %s', elem._template, JSON.stringify(tplScope));
-                    elem.html(tml.tr(elem._template, tplScope));
+                var params = {}, sKeys;
+                tplScope = tplScope || {};
+                sKeys = Object.keys(tplScope);
+                for (var i = 0; i < sKeys.length; i++)
+                {
+                    var key = sKeys[i];
+                    var value = tplScope[key]; 
+                    if( Object.prototype.toString.call( value ) === '[object Array]' )
+                    {
+                        var paramVal = [value];
+                        
+                        if (tplScope[key + '-format'])
+                            paramVal[1] = tplScope[key + '-format'];
+
+                        if (tplScope[key + '-options'])
+                            paramVal[2] = tplScope[key + '-options'];
+                        
+                        params[key] = paramVal;
+                    }
+                    else
+                    {
+                        params[key] = value;
+                    }
+                }
+                //console.log('running template %s with %s', elem._template, JSON.stringify(params));
+                elem.html(tml.tr(elem._template, params));
+                $compile(angular.element(elem).contents())(scope);
             }
 
             elem._template = valueStr;
-
-            
 
             var args = argsStr;
             if (args && angular.isString(args)) {
@@ -77,13 +100,22 @@
                 
                 performTranslation();
             }
-            else {
+            else 
+            {
                 //get a list of token the translation needs
                 var neededScopeTokens = new tml.tml.TranslationKey({label: valueStr});
                 var tokenNames = neededScopeTokens.getDataTokens().map(function (item)
                 {
                     return item.short_name;
                 });
+                var newNames = [];
+                for (var i = 0; i < tokenNames.length; i++)
+                {
+                    var obj = tokenNames[i];
+                    newNames.push(obj + '-format');
+                    newNames.push(obj + '-options');
+                }
+                tokenNames = tokenNames.concat(newNames);
 
                 var simpleTokenProxy = {
                     ____store: {}
@@ -117,7 +149,10 @@
 
                             try {
                                 if (attrVal) {
-                                    return $parse(attrVal)(scope);
+                                    var parsed = $parse(attrVal)
+                                    if (parsed.literal)
+                                        stopWatching();
+                                    return parsed(scope);
                                 }
                             }
                             catch (err) {
@@ -202,7 +237,7 @@
                 
             }])
             //main tmlTr attribute directive
-            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$compile', '$rootScope', function (tmlConfig, $parse, $compile, $rootScope)
             {
                 return {
                     scope: true,
@@ -211,12 +246,12 @@
                     link: function (scope, elm, attrs, ctrl)
                     {
                         var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
-                        compileTranslation($parse, $rootScope, scope, elm, value, attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
             }])
             //main tmlTr element directive
-            .directive('tmlTr', ['tmlConfig', '$parse', '$rootScope', function (tmlConfig, $parse, $rootScope)
+            .directive('tmlTr', ['tmlConfig', '$parse', '$compile', '$rootScope', function (tmlConfig, $parse, $compile, $rootScope)
             {
                 return {
                     scope: true,
@@ -224,7 +259,7 @@
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
                     }
                 }
             }])

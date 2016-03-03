@@ -60,19 +60,19 @@ module.exports = function (grunt) {
     grunt.registerTask('installandbuild', [
         'auto_install',
         'clean',
-        'build_tml_js',
+        //'build_tml_js',
         'browserify'
     ]);
     grunt.registerTask('test', [
-        'auto_install',
+        //'auto_install',
         'clean',
-        'build_tml_js',
+        //'build_tml_js',
         'browserify',
         'karma'
     ]);
     grunt.registerTask('buildandtest', [
         'clean',
-        'build_tml_js',
+        //'build_tml_js',
         'browserify',
         'karma'
     ]);
