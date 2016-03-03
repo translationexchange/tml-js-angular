@@ -1794,6 +1794,37 @@ module.exports = isArray || function (val) {
 };
 
 },{}],5:[function(require,module,exports){
+/**
+ * Copyright (c) 2016 Translation Exchange, Inc.
+ *
+ *  _______                  _       _   _             ______          _
+ * |__   __|                | |     | | (_)           |  ____|        | |
+ *    | |_ __ __ _ _ __  ___| | __ _| |_ _  ___  _ __ | |__  __  _____| |__   __ _ _ __   __ _  ___
+ *    | | '__/ _` | '_ \/ __| |/ _` | __| |/ _ \| '_ \|  __| \ \/ / __| '_ \ / _` | '_ \ / _` |/ _ \
+ *    | | | | (_| | | | \__ \ | (_| | |_| | (_) | | | | |____ >  < (__| | | | (_| | | | | (_| |  __/
+ *    |_|_|  \__,_|_| |_|___/_|\__,_|\__|_|\___/|_| |_|______/_/\_\___|_| |_|\__,_|_| |_|\__, |\___|
+ *                                                                                        __/ |
+ *                                                                                       |___/
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 (function ()
 {
     var moduleName = 'tml';
@@ -2671,8 +2702,7 @@ module.exports = {
   includeAgent:         helpers.includeAgent
 };
 },{"tml-js":35}],10:[function(require,module,exports){
-
-var inline      = ["a", "span", "i", "b", "img", "strong", "s", "em", "u", "sub", "sup", "var", "code"];
+var inline      = ["a", "span", "i", "b", "img", "strong", "s", "em", "u", "sub", "sup", "var", "code", "kbd"];
 var separators  = ["br", "hr"];
 
 module.exports = {
@@ -3055,8 +3085,10 @@ module.exports = {
           helpers.updateCurrentLocale(tml.options.key, locale);
           tml.config.currentLanguage = tml.app.getCurrentLanguage();
 
-          if (this.tokenizer) {
+          if (this.tokenizer && this.tokenizer.updateAllNodes) {
             this.tokenizer.updateAllNodes();
+          } else {
+            window.location.reload();
           }
 
           if (tml.utils.isFunction(tml.options.onLanguageChange)) {
@@ -3356,6 +3388,7 @@ var utils       = tml.utils;
 var dom         = require('../helpers/dom-helpers');
 
 
+
 var DomTokenizer = function(doc, context, options) {
   this.doc = doc;
   this.context = context || {};
@@ -3394,8 +3427,9 @@ DomTokenizer.prototype = {
     var parent = nodes[0] && nodes[0].parentNode;
     var container;
     var tml, data, translation, text = "";
+
     if(parent) {
-      tml         = nodes.map(function(n){text+=n.innerText||n.nodeValue;return this.generateTmlTags(n);}.bind(this)).join("");
+      tml         = nodes.map(function(n){text+=n.innerHTML || n.nodeValue;return this.generateTmlTags(n);}.bind(this)).join("");
       data        = this.tokens;
       translation = this.translateTml(tml);
 
@@ -3520,10 +3554,12 @@ DomTokenizer.prototype = {
 
 
   generateTmlTags: function(node) {
-    if(node.nodeType == 3) { return node.nodeValue; }
+    if(node.nodeType == 3) { 
+      return this.escapeHtml(node.nodeValue); 
+    }
 
     if (!this.isTranslatable(node)) {
-      var tokenName = this.contextualize(this.adjustName(node), node.innerHTML);
+      var tokenName = this.contextualize(this.adjustName(node), node.outerHTML);
       return "{" + tokenName + "}";
     }
 
@@ -3536,7 +3572,7 @@ DomTokenizer.prototype = {
 
     for(var i=0; i<node.childNodes.length; i++) {
       var child = node.childNodes[i];
-      buffer = buffer + ((child.nodeType == 3) ? child.nodeValue : this.generateTmlTags(child));
+      buffer = buffer + ((child.nodeType == 3) ? this.escapeHtml(child.nodeValue) : this.generateTmlTags(child));
     }
     var tokenContext = this.generateHtmlToken(node);
     var token = this.contextualize(this.adjustName(node), tokenContext);
@@ -3725,6 +3761,11 @@ DomTokenizer.prototype = {
     return value.replace(/^\s+/,'');
   },
 
+  escapeHtml: function(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  },
 
 
 
@@ -3886,8 +3927,7 @@ module.exports = {
         span   :  "<span id='{$id}' class='{$class}' style='{$style}'>{$0}</span>",
         h1     :  "<h1>{$0}</h1>",
         h2     :  "<h2>{$0}</h2>",
-        h3     :  "<h3>{$0}</h3>",
-        code   :  "<code>{$0}</code>"
+        h3     :  "<h3>{$0}</h3>"
       }
     },
     text : {
@@ -3925,8 +3965,7 @@ module.exports = {
         span   :  "{$0}",
         h1     :  "{$0}",
         h2     :  "{$0}",
-        h3     :  "{$0}",
-        code   :  "{$0}"
+        h3     :  "{$0}"
       }
     }
   },
@@ -3940,7 +3979,7 @@ module.exports = {
     ignore_elements: ['.notranslate'],
     nodes: {
       ignored:    [],
-      scripts:    ["iframe", "script", "noscript", "style", "audio", "video", "map", "object", "track", "embed", "svg", "ruby"],
+      scripts:    ["iframe", "script", "noscript", "style", "audio", "video", "map", "object", "track", "embed", "svg", "ruby", "pre"],
       inline:     ["a", "span", "i", "b", "img", "strong", "s", "em", "u", "sub", "sup", "var", "code"],
       short:      ["i", "b"],
       splitters:  ["br", "hr"]
@@ -5351,7 +5390,7 @@ module.exports = {
 };
 },{}],17:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -5421,7 +5460,7 @@ Base.prototype = {
 module.exports = Base;
 },{}],18:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -5457,9 +5496,6 @@ var config = require("./configuration");
 var BaseAdapter = require('./api_adapters/base');
 
 var API_PATH = "/v1/";
-
-var CDN_URL = 'https://cdn.translationexchange.com';
-// var CDN_URL      = 'https://trex-snapshots.s3-us-west-1.amazonaws.com';
 
 /**
  * API Client
@@ -5506,7 +5542,7 @@ ApiClient.prototype = {
     var self = this;
     var t = new Date().getTime();
 
-    var url = CDN_URL + "/" + this.application.key + "/version.json";
+    var url = this.application.getCdnHost() + "/" + this.application.key + "/version.json";
 
     self.adapter.get(url, {t: t}, function (error, response, data) {
       if (response.status == 403 || error || !data) {
@@ -5601,7 +5637,7 @@ ApiClient.prototype = {
       return;
     }
 
-    var cdn_url = CDN_URL + "/" + this.application.key + "/" + this.cache.version + utils.normalizePath(key) + ".json";
+    var cdn_url = this.application.getCdnHost() + "/" + this.application.key + "/" + this.cache.version + utils.normalizePath(key) + ".json";
     self.adapter.get(cdn_url, {}, function (error, response, data) {
       if (!data || data.match(/xml/)) error = 'Not found';
 
@@ -5714,7 +5750,7 @@ module.exports = ApiClient;
 
 },{"./api_adapters/base":17,"./configuration":22,"./logger":30,"./utils":45}],19:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -5752,7 +5788,8 @@ var Language    = require("./language");
 var Source      = require("./source");
 var ApiClient   = require("./api_client");
 
-var DEFAULT_HOST = "https://api.translationexchange.com";
+var API_HOST = "https://api.translationexchange.com";
+var CDN_HOST = "https://cdn.translationexchange.com";
 
 /**
  * Application
@@ -5783,7 +5820,16 @@ Application.prototype = {
    * @returns {*|string}
    */
   getHost: function() {
-    return this.host || DEFAULT_HOST;
+    return this.host || API_HOST;
+  },
+
+  /**
+   * Returns CDN host
+   *
+   * @returns {*|string}
+   */
+  getCdnHost: function() {
+    return this.cdn_host || CDN_HOST;
   },
 
   /**
@@ -6360,7 +6406,7 @@ module.exports = Application;
 
 },{"./api_client":18,"./configuration":22,"./language":25,"./logger":30,"./source":34,"./utils":45}],20:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -6561,7 +6607,7 @@ Cache.prototype = {
 module.exports = Cache;
 },{"./cache_adapters/base":21,"./configuration":22,"./utils":45}],21:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -6771,7 +6817,7 @@ Base.prototype = {
 module.exports = Base;
 },{"../configuration":22,"../logger":30,"../utils":45}],22:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7024,7 +7070,7 @@ module.exports = new Configuration();
 },{"./../config/application.js":14,"./../config/defaults.js":15,"./../config/english.js":16,"./cache":20,"./utils":45}],23:[function(require,module,exports){
 (function (Buffer){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7197,7 +7243,7 @@ module.exports = HTMLDecorator;
 }).call(this,require("buffer").Buffer)
 },{"../utils":45,"buffer":1}],24:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7318,7 +7364,7 @@ module.exports = {
 };
 },{}],25:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7488,7 +7534,7 @@ module.exports = Language;
 
 },{"./configuration":22,"./language_case":26,"./language_context":28,"./translation_key":43,"./utils":45}],26:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7605,7 +7651,7 @@ module.exports = LanguageCase;
 
 },{"./configuration":22,"./decorators/html":23,"./language_case_rule":27,"./utils":45}],27:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7704,7 +7750,7 @@ module.exports = LanguageCaseRule;
 
 },{"./rules_engine/evaluator":32,"./rules_engine/parser":33,"./utils":45}],28:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7823,7 +7869,7 @@ LanguageContext.prototype = {
 module.exports = LanguageContext;
 },{"./configuration":22,"./language_context_rule":29,"./utils":45}],29:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7894,7 +7940,7 @@ LanguageContextRule.prototype = {
 module.exports = LanguageContextRule;
 },{"./rules_engine/evaluator":32,"./rules_engine/parser":33,"./utils":45}],30:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -7960,7 +8006,7 @@ var Logger = {
 module.exports = Logger;
 },{"./configuration":22,"./utils":45}],31:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -8203,7 +8249,7 @@ var MD5 = function (string) {
 module.exports = MD5;
 },{}],32:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -8394,7 +8440,7 @@ module.exports = Evaluator;
 
 },{}],33:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -8454,7 +8500,7 @@ Parser.prototype = {
 module.exports = Parser;
 },{}],34:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -8551,7 +8597,7 @@ module.exports = Source;
 },{"./configuration":22,"./translation":42,"./utils":45}],35:[function(require,module,exports){
 
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -8639,7 +8685,7 @@ module.exports = Tml;
 
 },{"./api_adapters/base":17,"./application":19,"./cache_adapters/base":21,"./configuration":22,"./helpers/scripts":24,"./language":25,"./language_case":26,"./language_case_rule":27,"./language_context":28,"./language_context_rule":29,"./logger":30,"./source":34,"./tokenizers/dom":38,"./translation":42,"./translation_key":43,"./translator":44,"./utils":45}],36:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -8731,7 +8777,7 @@ DataTokenizer.prototype = {
 module.exports = DataTokenizer;
 },{"../configuration":22,"../tokens/data":39,"../tokens/method":40,"../tokens/piped":41}],37:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -8931,7 +8977,7 @@ DecorationTokenizer.prototype = {
 module.exports = DecorationTokenizer;
 },{"../configuration":22,"../utils":45}],38:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -9409,7 +9455,7 @@ DomTokenizer.prototype = {
 module.exports = DomTokenizer;
 },{"../configuration":22,"../utils":45}],39:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -9612,12 +9658,22 @@ DataToken.prototype = {
    *
    * @example
    *
-   * tr("Hello {user_list}!", {user_list: [[user1, user2, user3], "@name"]}}
+   * tr("Hello {user_list}!", {user_list: [[user1, user2, user3], "{$0}", {}]}}
    * tr("{users} joined the site", {users: [[user1, user2, user3], "@name"]})
-   * tr("{users} joined the site", {users: [[user1, user2, user3], function(user) { return user.name; }]})
+   * tr("{users} joined the site", {users: [[user1, user2, user3], function(user) { return tr(user.name); }]})
    * tr("{users} joined the site", {users: [[user1, user2, user3], {attribute: "name"})
    * tr("{users} joined the site", {users: [[user1, user2, user3], {attribute: "name", value: "<strong>{$0}</strong>"})
    * tr("{users} joined the site", {users: [[user1, user2, user3], "<strong>{$0}</strong>")
+
+   var user_func = function(user) {}
+
+   tokens = {users: [someArr]}
+
+   <p tml-tr users="someArr" users-format='{attribute: "name"}' users-options=''>
+      {users} joined the site
+   </p>
+
+   * tr("{count || message}", {user: [1234, function(value) { return tml_localize(value); }]})
    *
    * tr("{users} joined the site", {users: [[user1, user2, user3], "@name", {
    *   limit: 4,
@@ -9631,6 +9687,12 @@ DataToken.prototype = {
    */
   
   getTokenValueFromArray: function(params, language, options) {
+    console.log("TOKEN ARRAY");
+    console.log(this.label);
+    console.log(params);
+    console.log(options);
+    console.log("END TOKEN ARRAY");
+
     var list_options = {
       description: "List joiner",
       limit: 4,
@@ -9747,6 +9809,9 @@ DataToken.prototype = {
     if (typeof object == "string")
       return this.sanitize(object.toString(), object, language, utils.extend(options, {safe: true}));
 
+    console.log("Checking object");
+    console.log(object, utils.isArray(object));
+
     if (utils.isArray(object))
       return this.getTokenValueFromArrayParam(object, language, options);
 
@@ -9790,7 +9855,7 @@ DataToken.prototype = {
 module.exports = DataToken;
 },{"../configuration":22,"../decorators/html":23,"../logger":30,"../utils":45}],40:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -9881,7 +9946,7 @@ module.exports = MethodToken;
 
 },{"../decorators/html":23,"../utils":45,"./data":39}],41:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -10147,7 +10212,7 @@ module.exports = PipedToken;
 
 },{"../decorators/html":23,"../utils":45,"./data":39}],42:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -10239,7 +10304,7 @@ module.exports = Translation;
 
 },{"./tokens/data":39,"./utils":45}],43:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -10434,7 +10499,7 @@ module.exports = TranslationKey;
 
 },{"./configuration":22,"./decorators/html":23,"./tokenizers/data":36,"./tokenizers/decoration":37,"./translation":42,"./utils":45}],44:[function(require,module,exports){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
@@ -10489,7 +10554,7 @@ module.exports = Translator;
 },{"./utils":45}],45:[function(require,module,exports){
 (function (Buffer){
 /**
- * Copyright (c) 2015 Translation Exchange, Inc.
+ * Copyright (c) 2016 Translation Exchange, Inc.
  *
  *  _______                  _       _   _             ______          _
  * |__   __|                | |     | | (_)           |  ____|        | |
