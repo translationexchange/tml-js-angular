@@ -59,7 +59,7 @@ def version_or_environment(opts)
 end
 
 def invalidate(files, opts)
-  unless ['production', 'staging'].include?(opts[:environment])
+  unless ['production', 'staging', 'sandbox'].include?(opts[:environment])
     return
   end
 
