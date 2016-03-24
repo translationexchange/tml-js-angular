@@ -95,10 +95,6 @@ def invalidate(files, opts)
   puts res.body
 end
 
-# increment version
-puts("Incrementing build number to #{build_number + 1}...\n")
-increment_build_number
-
 pp("Deploying version #{version} to tools/tml-angular/#{version_or_environment(opts)}/tml-angular.js...")
 
 # check in the new version
@@ -124,16 +120,21 @@ if opts[:environment] == 'production'
   execute("aws s3 cp dist/tml-angular.js s3://trex-snapshots/tools/tml-angular/#{version}/tml-angular.js")
   execute("aws s3 cp dist/tml-angular.min.js s3://trex-snapshots/tools/tml-angular/#{version}/tml-angular.min.js")
 
-  if opts[:stable]
-    execute("aws s3 cp dist/tml-angular.js s3://trex-snapshots/tools/tml-angular/stable/tml-angular.js")
-    execute("aws s3 cp dist/tml-angular.min.js s3://trex-snapshots/tools/tml-angular/stable/tml-angular.min.js")
-    invalidate(["tools/tml-angular/stable/tml-angular.js", "tools/tml-angular/stable/tml-angular.min.js"], opts)
-    execute("open https://cdn.translationexchange.com/tools/tml-angular/stable/tml-angular.min.js")
-  else
-    execute("open https://cdn.translationexchange.com/tools/tml-angular/#{version}/tml-angular.min.js")
-  end
+  execute("aws s3 cp dist/tml-angular.js s3://trex-snapshots/tools/tml-angular/stable/tml-angular.js")
+  execute("aws s3 cp dist/tml-angular.min.js s3://trex-snapshots/tools/tml-angular/stable/tml-angular.min.js")
+  invalidate(["tools/tml-angular/stable/tml-angular.js", "tools/tml-angular/stable/tml-angular.min.js"], opts)
+  execute("open https://cdn.translationexchange.com/tools/tml-angular/stable/tml-angular.min.js")
 
   execute("git checkout develop")
+
+  # increment version
+  puts("Incrementing build number to #{build_number + 1}...\n")
+  increment_build_number
+
+  # check in the new version
+  execute("git add package.json")
+  execute("git commit -m 'Incremented build version to #{version}'")
+  execute("git push")
 
 else
   execute("aws s3 cp dist/tml-angular.js s3://trex-snapshots/tools/tml-angular/#{opts[:environment]}/tml-angular.js")
