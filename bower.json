@@ -2,6 +2,7 @@
   "name": "tml-angular",
   "version": "0.1.0",
   "homepage": "https://github.com/translationexchange/tml-js-angular",
+  "main": "./src/tml-angular.js",
   "moduleType": [
     "amd"
   ],
