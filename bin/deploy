@@ -98,8 +98,8 @@ end
 pp("Deploying version #{version} to tools/tml-angular/#{version_or_environment(opts)}/tml-angular.js...")
 
 # check in the new version
-execute("git add package.json")
-execute("git commit -m 'Incremented build version to #{version}'")
+# execute("git add package.json")
+# execute("git commit -m 'Incremented build version to #{version}'")
 
 execute('(npm run build)')
 
