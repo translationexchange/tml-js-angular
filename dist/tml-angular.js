@@ -2209,7 +2209,8 @@ Ajax.prototype = tml.utils.extend(new tml.ApiAdapterBase(), {
     xhr.onload = function() {
       var t1 = new Date();
       tml.logger.debug("call took " + (t1-t0) + " mls");
-      callback(null, xhr, xhr.responseText);
+      var error = xhr.status >= 200 && xhr.status < 400;
+      callback(!error, xhr, xhr.responseText);
     };
     xhr.onerror = function(err) {
       callback(err, xhr);
@@ -2895,7 +2896,6 @@ module.exports = {
     var Emitter = require('tiny-emitter');
     var emitter = new Emitter();
 
-    var DEFAULT_HOST = "https://api.translationexchange.com";
     var mutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 
     tml = tml.utils.extend(tml, {
@@ -3049,7 +3049,8 @@ module.exports = {
         tml.app = new tml.Application({
           key: options.key,
           token: cookie.oauth ? cookie.oauth.token : null,
-          host: options.host || DEFAULT_HOST
+          host: options.host,
+          cdn_host: options.cdn_host
         });
 
         tml.app.init(options, function (err) {
@@ -3748,7 +3749,7 @@ DomTokenizer.prototype = {
 
 
   adjustName: function(node) {
-    var name = node.tagName.toLowerCase();
+    var name = node.tagName && node.tagName.toLowerCase() || 'node';
     var map = this.getOption("name_mapping");
     name = map[name] ? map[name] : name;
     return name;
@@ -9729,7 +9730,7 @@ DataToken.prototype = {
       joiner: 'and',
       less: '{laquo} less',
       translate: false,
-      expandable: true,
+      expandable: false,
       collapsable: true
     };
 
@@ -9746,10 +9747,11 @@ DataToken.prototype = {
     var target_language = options.target_language || language;
 
     var values = [];
+    var value;
     for (var i=0; i<objects.length; i++) {
       var obj = objects[i];
       if (method === null) {
-        var value = this.getTokenValueFromHashParam(obj, language, options);
+        value = this.getTokenValueFromHashParam(obj, language, options);
 
         if (list_options.translate && target_language)
           value = target_language.translate(value, '', {}, options);
@@ -9761,14 +9763,14 @@ DataToken.prototype = {
       } else if (typeof method === "string") {
         if (method.match(/^@/)) {
           var attr = method.replace(/^@/, "");
-          var value = obj[attr] || obj[attr]();
+          value = obj[attr] || obj[attr]();
 
           if (list_options.translate && target_language)
             value = target_language.translate(value, '', {}, options);
 
           values.push(decorator.decorateElement(this, this.sanitize(value, obj, language, utils.extend(options, {safe: false})), options));
         } else {
-          var value = "" + obj;
+          value = "" + obj;
 
           if (list_options.translate && target_language)
             value = target_language.translate(value, '', {}, options);
@@ -9789,7 +9791,7 @@ DataToken.prototype = {
           else
             values.push(decorator.decorateElement(this, attribute || "" + obj, options));
         } else {
-          var value = this.getTokenValueFromHashParam(obj, language, options);
+          value = this.getTokenValueFromHashParam(obj, language, options);
 
           if (list_options.translate && target_language)
             value = target_language.translate(value, '', {}, options);
