@@ -1973,6 +1973,10 @@ module.exports = Array.isArray || function (arr) {
             .run(['$rootScope', function ($rootScope)
             {
                 $rootScope.tml = tml;
+                tml.tml.config = tml.tml.config || {};
+                //prevents auto refresh of the page on language change
+                tml.tml.config.refreshHandled = true;
+                
                 //translate label function
                 $rootScope.trl = function (template, values)
                 {
@@ -3088,18 +3092,28 @@ module.exports = {
       },
 
       /**
-       * Changes language
+       * Changes language. This method can be used:
+       *
+       *
        *
        * @param locale
+       * @param refresh
        */
-      changeLanguage: function (locale) {
+      changeLanguage: function (locale, refresh) {
         tml.app.changeLanguage(locale, function (language) {
           helpers.updateCurrentLocale(tml.options.key, locale);
           tml.config.currentLanguage = tml.app.getCurrentLanguage();
+          var autoMode = this.tokenizer && this.tokenizer.updateAllNodes;
+          refresh = typeof refresh !== undefined ? refresh : !tml.config.refreshHandled;
 
-          if (this.tokenizer && this.tokenizer.updateAllNodes) {
+          // for dynamic translate body - we want to reload all translations automatically
+          if (autoMode) {
             this.tokenizer.updateAllNodes();
-          } else {
+          }
+
+          if (refresh) {
+            // let SDKs handle it: server side or manual JS (like backbone or jst) - we may need a refresh
+            // other client-side SDKs need to handle it themselves - angular, ember
             window.location.reload();
           }
 
