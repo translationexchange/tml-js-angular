@@ -201,6 +201,10 @@
             .run(['$rootScope', function ($rootScope)
             {
                 $rootScope.tml = tml;
+                tml.tml.config = tml.tml.config || {};
+                //prevents auto refresh of the page on language change
+                tml.tml.config.refreshHandled = true;
+                
                 //translate label function
                 $rootScope.trl = function (template, values)
                 {
