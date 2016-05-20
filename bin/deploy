@@ -97,14 +97,12 @@ end
 
 pp("Deploying version #{version} to tools/tml-angular/#{version_or_environment(opts)}/tml-angular.js...")
 
-# check in the new version
-# execute("git add package.json")
-# execute("git commit -m 'Incremented build version to #{version}'")
+# The version should be incremented after a build to production
 
 execute('(npm run build)')
 
 # check in the new version
-execute("git add dist")
+execute("git add dist/tml-angular.js")
 execute("git commit -m 'Updated distribution for version #{version}'")
 
 # push to github
@@ -113,8 +111,11 @@ execute("git push")
 if opts[:environment] == 'production'
   execute("git checkout master")
   execute("git merge develop")
-  execute("git tag '#{version}'")
   execute("git push")
+
+  execute("git tag '#{version}'")
+  execute("git push --tags")
+  
   execute("npm publish")
 
   execute("aws s3 cp dist/tml-angular.js s3://trex-snapshots/tools/tml-angular/#{version}/tml-angular.js")
@@ -123,7 +124,7 @@ if opts[:environment] == 'production'
   execute("aws s3 cp dist/tml-angular.js s3://trex-snapshots/tools/tml-angular/stable/tml-angular.js")
   execute("aws s3 cp dist/tml-angular.min.js s3://trex-snapshots/tools/tml-angular/stable/tml-angular.min.js")
   invalidate(["tools/tml-angular/stable/tml-angular.js", "tools/tml-angular/stable/tml-angular.min.js"], opts)
-  execute("open https://cdn.translationexchange.com/tools/tml-angular/stable/tml-angular.min.js")
+  execute("open https://cdn.translationexchange.com/tools/tml-angular/stable/tml-angular.js")
 
   execute("git checkout develop")
 
@@ -141,7 +142,7 @@ else
   execute("aws s3 cp dist/tml-angular.min.js s3://trex-snapshots/tools/tml-angular/#{opts[:environment]}/tml-angular.min.js")
   invalidate(["tools/tml-angular/#{opts[:environment]}/tml-angular.js", "tools/tml-angular/#{opts[:environment]}/tml-angular.min.js"], opts)
 
-  execute("open https://cdn.translationexchange.com/tools/tml-angular/#{opts[:environment]}/tml-angular.min.js")
+  execute("open https://cdn.translationexchange.com/tools/tml-angular/#{opts[:environment]}/tml-angular.js")
 end
 
 puts("\n\nCongratulations, the tml-angular v#{version} has been deployed...")
