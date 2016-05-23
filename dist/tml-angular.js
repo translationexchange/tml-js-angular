@@ -8,11 +8,9 @@
  */
 /* eslint-disable no-proto */
 
-'use strict'
-
 var base64 = require('base64-js')
 var ieee754 = require('ieee754')
-var isArray = require('isarray')
+var isArray = require('is-array')
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -92,10 +90,8 @@ function Buffer (arg) {
     return new Buffer(arg)
   }
 
-  if (!Buffer.TYPED_ARRAY_SUPPORT) {
-    this.length = 0
-    this.parent = undefined
-  }
+  this.length = 0
+  this.parent = undefined
 
   // Common case.
   if (typeof arg === 'number') {
@@ -226,10 +222,6 @@ function fromJsonObject (that, object) {
 if (Buffer.TYPED_ARRAY_SUPPORT) {
   Buffer.prototype.__proto__ = Uint8Array.prototype
   Buffer.__proto__ = Uint8Array
-} else {
-  // pre-set for values that may exist in the future
-  Buffer.prototype.length = undefined
-  Buffer.prototype.parent = undefined
 }
 
 function allocate (that, length) {
@@ -379,6 +371,10 @@ function byteLength (string, encoding) {
   }
 }
 Buffer.byteLength = byteLength
+
+// pre-set for values that may exist in the future
+Buffer.prototype.length = undefined
+Buffer.prototype.parent = undefined
 
 function slowToString (encoding, start, end) {
   var loweredCase = false
@@ -1471,7 +1467,7 @@ function utf8ToBytes (string, units) {
       }
 
       // valid surrogate pair
-      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+      codePoint = leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00 | 0x10000
     } else if (leadSurrogate) {
       // valid bmp char, but last char was a lead
       if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
@@ -1550,7 +1546,7 @@ function blitBuffer (src, dst, offset, length) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"base64-js":2,"ieee754":3,"isarray":4}],2:[function(require,module,exports){
+},{"base64-js":2,"ieee754":3,"is-array":4}],2:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -1763,10 +1759,38 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 }
 
 },{}],4:[function(require,module,exports){
-var toString = {}.toString;
 
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
+/**
+ * isArray
+ */
+
+var isArray = Array.isArray;
+
+/**
+ * toString
+ */
+
+var str = Object.prototype.toString;
+
+/**
+ * Whether or not the given `val`
+ * is an array.
+ *
+ * example:
+ *
+ *        isArray([]);
+ *        // > true
+ *        isArray(arguments);
+ *        // > false
+ *        isArray('');
+ *        // > false
+ *
+ * @param {mixed} val
+ * @return {bool}
+ */
+
+module.exports = isArray || function (val) {
+  return !! val && '[object Array]' == str.call(val);
 };
 
 },{}],5:[function(require,module,exports){
@@ -4007,7 +4031,6 @@ module.exports = {
     decoration_token_format: "[]",
     ignore_elements: ['.notranslate'],
     nodes: {
-      //ignored:    ["body", "html", "head"],
       ignored:    [],
       scripts:    ["iframe", "script", "noscript", "style", "audio", "video", "map", "object", "track", "embed", "svg", "ruby", "pre"],
       inline:     ["a", "span", "i", "b", "img", "strong", "s", "em", "u", "sub", "sup", "var", "code"],
@@ -5733,13 +5756,7 @@ ApiClient.prototype = {
 
     var request_callback = function (error, response, body) {
       if (!error && body) {
-        var errorData;
-        try
-        {
-          errorData = JSON.parse(body);
-        } catch(e){}
-        
-        callback(error, errorData);
+        callback(error, JSON.parse(body));
       } else {
         callback(error, body);
       }
@@ -6289,6 +6306,9 @@ Application.prototype = {
   },
 
   isInlineModeEnabled: function() {
+    // TODO: ensure that if token is provided in the initial settings - application token
+    // we should still be able to submit missing keys
+
     if (!this.current_translator) return false;
     return this.current_translator.inline;
   },
@@ -8811,22 +8831,8 @@ DataTokenizer.prototype = {
       }
     }
     return label;
-  },
-  get metadata() {
-    
-    var tokenTypes = DataTokenizer.prototype.getSupportedTokens();
-    return tokenTypes.reduce(function (result, value, index)
-    {
-      var name = value[1].name;
-      if (!name)
-          name = /function ([^(]*)/.exec( value[1]+"" )[1];
-      
-      if (name)
-          result[name] = value[0];
-      
-      return result;
-    }, {})
   }
+
 };
 
 module.exports = DataTokenizer;
@@ -8928,12 +8934,6 @@ DecorationTokenizer.prototype = {
 
   parseTree: function(name, type) {
     var tree = [name];
-    Object.defineProperty(tree, "tokenType", {
-      value: type,
-      configurable: true,
-      enumerable: false,
-      writable: true
-    });
     if (this.tokens.indexOf(name) == -1 && name != RESERVED_TOKEN)
       this.tokens.push(name);
 
@@ -9030,21 +9030,8 @@ DecorationTokenizer.prototype = {
     var result = this.evaluate(this.parse());
     result = result.replace('[/tml]', '');
     return result;
-  },
-  metadata: {
-    short: {
-      start: RE_SHORT_TOKEN_START,
-      end: RE_SHORT_TOKEN_END
-    },
-    long: {
-      start: RE_LONG_TOKEN_START, 
-      end: RE_LONG_TOKEN_END
-    },
-    html: {
-      start: RE_HTML_TOKEN_START,
-      end: RE_HTML_TOKEN_END 
-    }
   }
+
 };
 
 
@@ -9575,7 +9562,7 @@ var decorator       = require('../decorators/html');
  * @param label
  */
 
-function DataToken(name, label) {
+var DataToken = function(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
@@ -9982,7 +9969,7 @@ var decorator       = require('../decorators/html');
 
 var DataToken       = require('./data');
 
-function MethodToken(name, label) {
+var MethodToken = function(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
@@ -10099,7 +10086,7 @@ var decorator       = require('../decorators/html');
 
 var DataToken       = require('./data');
 
-function PipedToken(name, label) {
+var PipedToken = function(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
