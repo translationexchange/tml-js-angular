@@ -1864,8 +1864,8 @@ module.exports = Array.isArray || function (arr) {
                 {
                     performTranslation(); 
                 });
-                
-                function performTranslation()
+
+                var performTranslation = function()
                 {
                     runTemplate(parsedArgs ? parsedArgs(scope) : {});
                 }
@@ -1952,7 +1952,7 @@ module.exports = Array.isArray || function (arr) {
                     performTranslation();
                 });
 
-                function performTranslation()
+                var performTranslation = function()
                 {
                     runTemplate(simpleTokenProxy);
                 }
@@ -1997,8 +1997,12 @@ module.exports = Array.isArray || function (arr) {
                 tml.tml.on('language-change', function (language)
                 {
                     $rootScope.$emit('language-change', language);
-                    setLanguage(language);
-                    $rootScope.$digest();
+                    var fn = setLanguage.bind(null, language);
+                    var phase = $rootScope.$$phase;
+                    if(phase == '$apply' || phase == '$digest')
+                        $rootScope.$eval(fn);
+                    else
+                        $rootScope.$apply(fn);
                 });
                 
                 $rootScope.$watch('tml.tml.getCurrentLanguage()', setLanguage);
