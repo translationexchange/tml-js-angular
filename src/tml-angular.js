@@ -254,6 +254,7 @@
                     link: function (scope, elm, attrs, ctrl)
                     {
                         var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
+                        value = tml.tml.utils.sanitizeString(value);
                         compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
@@ -267,7 +268,9 @@
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, $compile, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
+                        var value = attrs.translateStr || elm.html();
+                        value = tml.tml.utils.sanitizeString(value);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
             }])
