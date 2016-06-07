@@ -2026,6 +2026,7 @@ module.exports = Array.isArray || function (arr) {
                     link: function (scope, elm, attrs, ctrl)
                     {
                         var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
+                        value = tml.tml.utils.sanitizeString(value);
                         compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
@@ -2039,7 +2040,9 @@ module.exports = Array.isArray || function (arr) {
                     restrict: 'E',
                     link: function (scope, elm, attrs, ctrl)
                     {
-                        compileTranslation($parse, $compile, $rootScope, scope, elm, attrs.translateStr || elm.html(), attrs.values);
+                        var value = attrs.translateStr || elm.html();
+                        value = tml.tml.utils.sanitizeString(value);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
                     }
                 }
             }])
@@ -4011,7 +4014,6 @@ module.exports = {
     decoration_token_format: "[]",
     ignore_elements: ['.notranslate'],
     nodes: {
-      //ignored:    ["body", "html", "head"],
       ignored:    [],
       scripts:    ["iframe", "script", "noscript", "style", "audio", "video", "map", "object", "track", "embed", "svg", "ruby", "pre"],
       inline:     ["a", "span", "i", "b", "img", "strong", "s", "em", "u", "sub", "sup", "var", "code"],
@@ -5737,13 +5739,7 @@ ApiClient.prototype = {
 
     var request_callback = function (error, response, body) {
       if (!error && body) {
-        var errorData;
-        try
-        {
-          errorData = JSON.parse(body);
-        } catch(e){}
-        
-        callback(error, errorData);
+        callback(error, JSON.parse(body));
       } else {
         callback(error, body);
       }
@@ -8815,22 +8811,8 @@ DataTokenizer.prototype = {
       }
     }
     return label;
-  },
-  get metadata() {
-    
-    var tokenTypes = DataTokenizer.prototype.getSupportedTokens();
-    return tokenTypes.reduce(function (result, value, index)
-    {
-      var name = value[1].name;
-      if (!name)
-          name = /function ([^(]*)/.exec( value[1]+"" )[1];
-      
-      if (name)
-          result[name] = value[0];
-      
-      return result;
-    }, {})
   }
+
 };
 
 module.exports = DataTokenizer;
@@ -8932,12 +8914,6 @@ DecorationTokenizer.prototype = {
 
   parseTree: function(name, type) {
     var tree = [name];
-    Object.defineProperty(tree, "tokenType", {
-      value: type,
-      configurable: true,
-      enumerable: false,
-      writable: true
-    });
     if (this.tokens.indexOf(name) == -1 && name != RESERVED_TOKEN)
       this.tokens.push(name);
 
@@ -9034,21 +9010,8 @@ DecorationTokenizer.prototype = {
     var result = this.evaluate(this.parse());
     result = result.replace('[/tml]', '');
     return result;
-  },
-  metadata: {
-    short: {
-      start: RE_SHORT_TOKEN_START,
-      end: RE_SHORT_TOKEN_END
-    },
-    long: {
-      start: RE_LONG_TOKEN_START, 
-      end: RE_LONG_TOKEN_END
-    },
-    html: {
-      start: RE_HTML_TOKEN_START,
-      end: RE_HTML_TOKEN_END 
-    }
   }
+
 };
 
 
@@ -9579,7 +9542,7 @@ var decorator       = require('../decorators/html');
  * @param label
  */
 
-function DataToken(name, label) {
+var DataToken = function(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
@@ -9986,7 +9949,7 @@ var decorator       = require('../decorators/html');
 
 var DataToken       = require('./data');
 
-function MethodToken(name, label) {
+var MethodToken = function(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
@@ -10103,7 +10066,7 @@ var decorator       = require('../decorators/html');
 
 var DataToken       = require('./data');
 
-function PipedToken(name, label) {
+var PipedToken = function(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
