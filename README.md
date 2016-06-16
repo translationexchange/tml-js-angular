@@ -45,6 +45,18 @@ Make sure to include it after the angular script tag
 
     angular.module('app', [require('tml-angular')]);
 
+### Preparing your angular app
+
+For best results, your angular app should start after the TML library has been initialized. 
+Remember to remove `ng-app` from your HTML and instead manually bootstrap the angular app, like in the following example:
+
+     tml.init({
+       key: "YOUR_KEY",
+       onLoad: function (app) {
+         angular.bootstrap(document, ['YOUR_NG_APP']);
+       }
+     });
+
 ## Usage
 
 #### As an element, with scope defined data
