@@ -69,6 +69,9 @@ describe('module tmlTr', function () {
                 version: '20150902001636',
                 path: 'base/fixtures'
             },
+            agent: {
+                enabled: false
+            },
             debug: true,
             onLoad: function (app)
             {
