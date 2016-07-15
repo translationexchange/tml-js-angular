@@ -305,6 +305,22 @@ describe('module tmlTr', function () {
 
         });
 
+        it('should translate with attribute with description', function ()
+        {
+            $rootScope.user = { first_name: "Jenny", description: "welcome the user" };
+            var element = angular.element('<span tml-tr="Hello {user.first_name}" tml-description="{{user.description}}"></span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Jenny');
+
+            $rootScope.user = { first_name: "Boris" };
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+
+        });
+
         it('should translate with attribute with context', function ()
         {
             $rootScope.user = { first_name: "Helen" };
