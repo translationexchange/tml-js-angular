@@ -239,6 +239,22 @@ describe('module tmlTr', function () {
             expect(element.text()).toBe('Привет, Boris');
         });
 
+        it('should translate with global function with description', function ()
+        {
+            $rootScope.user = { first_name: "Jenny" };
+
+            var element = angular.element('<span>{{ trl("Hello {user.first_name}", "welcome the user")  }}</span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Jenny');
+
+            $rootScope.user = { first_name: "Boris" };
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+        });
+
         it('should translate with global function with scope object 2', function ()
         {
             $rootScope.user = { name: "Anna" };
@@ -270,6 +286,38 @@ describe('module tmlTr', function () {
 
             $rootScope.$digest();
             expect(element.text()).toBe('Загрузить страницу 3 из 50');
+
+        });
+
+        it('should translate with attribute with description', function ()
+        {
+            $rootScope.user = { first_name: "Jenny" };
+            var element = angular.element('<span tml-tr="Hello {user.first_name}" tml-description="welcome the user"></span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Jenny');
+
+            $rootScope.user = { first_name: "Boris" };
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
+
+        });
+
+        it('should translate with attribute with context', function ()
+        {
+            $rootScope.user = { first_name: "Helen" };
+            var element = angular.element('<span tml-tr="Hello {user.first_name}" tml-context="welcome the user"></span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Helen');
+
+            $rootScope.user = { first_name: "Boris" };
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('Привет, Boris');
 
         });
 

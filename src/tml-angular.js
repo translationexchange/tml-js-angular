@@ -36,7 +36,7 @@
 
     function tmlAngular(angular)
     {
-        function compileTranslation($parse, $compile, $rootScope, scope, elem, valueStr, argsStr)
+        function compileTranslation($parse, $compile, $rootScope, scope, elem, valueStr, argsStr, description)
         {
             function runTemplate(tplScope)
             {
@@ -65,7 +65,12 @@
                     }
                 }
                 //console.log('running template %s with %s', elem._template, JSON.stringify(params));
-                elem.html(tml.tr(elem._template, params));
+                var args = [elem._template];
+                if (description)
+                    args.push(description);
+                args.push(params);
+                var translation = tml.tr.apply(tml, args);
+                elem.html(translation);
                 $compile(angular.element(elem).contents())(scope);
             }
 
@@ -149,7 +154,7 @@
 
                             try {
                                 if (attrVal) {
-                                    var parsed = $parse(attrVal)
+                                    var parsed = $parse(attrVal);
                                     if (parsed.literal)
                                         stopWatching();
                                     return parsed(scope);
@@ -183,7 +188,7 @@
                 var performTranslation = function()
                 {
                     runTemplate(simpleTokenProxy);
-                }
+                };
                 
                 scope.$watch('[' + tokenNames.join(', ') + ']', function (newValuesArr, oldValuesArr)
                 {
@@ -193,6 +198,20 @@
                 performTranslation();
 
             }
+        }
+        
+        function translateLabel(template, description, values) {
+            var args = [template];
+            if (description) {
+                if (angular.isObject(description)) {
+                    values = description;
+                }
+                else if (angular.isString(description)) {
+                    args.push(description);
+                }
+            }
+            args.push(values ? values : this);
+            return tml.trl.apply(tml, args);
         }
 
 
@@ -206,10 +225,7 @@
                 tml.tml.config.refreshHandled = true;
                 
                 //translate label function
-                $rootScope.trl = function (template, values)
-                {
-                    return tml.trl(template, angular.isObject(values) ? values : this);
-                };
+                $rootScope.trl = translateLabel;
 
                 function setLanguage(language)
                 {
@@ -255,7 +271,7 @@
                     {
                         var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
                         value = tml.tml.utils.sanitizeString(value);
-                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values, attrs.tmlContext || attrs.tmlDescription);
                     }
                 }
             }])
@@ -270,20 +286,15 @@
                     {
                         var value = attrs.translateStr || elm.html();
                         value = tml.tml.utils.sanitizeString(value);
-                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values, attrs.tmlContext || attrs.tmlDescription);
                     }
                 }
             }])
             //simple label filter
-            .filter('trl', function ()
-            {
-                return function (template, values)
-                {
-                    return tml.trl(template, values);
-                }
+            .filter('trl', function () {
+                return translateLabel;
             })
-            .directive('tmlLs', [function ()
-            {
+            .directive('tmlLs', [function () {
                 return function (scope, element, attrs)
                 {
                     attrs.$set('data-tml-language-selector', attrs.tmlLs);

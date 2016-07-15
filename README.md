@@ -100,6 +100,13 @@ Instead of using scope names, it is possible to pass an object with token values
 Note: this cannot be combined with scope parameters  
 use either custom attributes + scope variables or a values object, not both.
 
+#### Phrase description ####
+
+The description of a phrase is not mandatory, but it should be used in cases when the label alone is not sufficient enough to determine the meaning of the sentence being translated. As a general rule, you should always provide description to words, phrases and sentences that are only meaningful within a specific context. TML uses label and description together to create a unique key for each phrase. The description serves two purposes: it creates a unique key for each label and it also gives a hint to the translators for the context in which the label is used.
+
+    <h3 tml-tr="Invite" tml-description="Link to invite your friends to join the site"></h3>
+    
+    <span tml-tr="Invite" tml-description="An invitation you received from your friend"></span>
 
 ### Some examples of advanced usage
 
