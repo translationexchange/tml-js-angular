@@ -1808,7 +1808,7 @@ module.exports = Array.isArray || function (arr) {
 
     function tmlAngular(angular)
     {
-        function compileTranslation($parse, $compile, $rootScope, scope, elem, valueStr, argsStr)
+        function compileTranslation($parse, $compile, $rootScope, scope, elem, valueStr, argsStr, description)
         {
             function runTemplate(tplScope)
             {
@@ -1837,7 +1837,12 @@ module.exports = Array.isArray || function (arr) {
                     }
                 }
                 //console.log('running template %s with %s', elem._template, JSON.stringify(params));
-                elem.html(tml.tr(elem._template, params));
+                var args = [elem._template];
+                if (description)
+                    args.push(description);
+                args.push(params);
+                var translation = tml.tr.apply(tml, args);
+                elem.html(translation);
                 $compile(angular.element(elem).contents())(scope);
             }
 
@@ -1921,7 +1926,7 @@ module.exports = Array.isArray || function (arr) {
 
                             try {
                                 if (attrVal) {
-                                    var parsed = $parse(attrVal)
+                                    var parsed = $parse(attrVal);
                                     if (parsed.literal)
                                         stopWatching();
                                     return parsed(scope);
@@ -1955,7 +1960,7 @@ module.exports = Array.isArray || function (arr) {
                 var performTranslation = function()
                 {
                     runTemplate(simpleTokenProxy);
-                }
+                };
                 
                 scope.$watch('[' + tokenNames.join(', ') + ']', function (newValuesArr, oldValuesArr)
                 {
@@ -1965,6 +1970,20 @@ module.exports = Array.isArray || function (arr) {
                 performTranslation();
 
             }
+        }
+        
+        function translateLabel(template, description, values) {
+            var args = [template];
+            if (description) {
+                if (angular.isObject(description)) {
+                    values = description;
+                }
+                else if (angular.isString(description)) {
+                    args.push(description);
+                }
+            }
+            args.push(values ? values : this);
+            return tml.trl.apply(tml, args);
         }
 
 
@@ -1978,10 +1997,7 @@ module.exports = Array.isArray || function (arr) {
                 tml.tml.config.refreshHandled = true;
                 
                 //translate label function
-                $rootScope.trl = function (template, values)
-                {
-                    return tml.trl(template, angular.isObject(values) ? values : this);
-                };
+                $rootScope.trl = translateLabel;
 
                 function setLanguage(language)
                 {
@@ -2027,7 +2043,7 @@ module.exports = Array.isArray || function (arr) {
                     {
                         var value = attrs.tmlTr && attrs.tmlTr != 'tml-tr' ? attrs.tmlTr : elm.html();
                         value = tml.tml.utils.sanitizeString(value);
-                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values, attrs.tmlContext || attrs.tmlDescription);
                     }
                 }
             }])
@@ -2042,20 +2058,15 @@ module.exports = Array.isArray || function (arr) {
                     {
                         var value = attrs.translateStr || elm.html();
                         value = tml.tml.utils.sanitizeString(value);
-                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values);
+                        compileTranslation($parse, $compile, $rootScope, scope, elm, value, attrs.values, attrs.tmlContext || attrs.tmlDescription);
                     }
                 }
             }])
             //simple label filter
-            .filter('trl', function ()
-            {
-                return function (template, values)
-                {
-                    return tml.trl(template, values);
-                }
+            .filter('trl', function () {
+                return translateLabel;
             })
-            .directive('tmlLs', [function ()
-            {
+            .directive('tmlLs', [function () {
                 return function (scope, element, attrs)
                 {
                     attrs.$set('data-tml-language-selector', attrs.tmlLs);
@@ -2624,7 +2635,10 @@ var helpers = {
       t = t - (t % options.cache);
       agent_host += "?ts=" + t;
     }
-
+    if (options.enabled === false) {
+      tml.logger.debug("agent disabled");
+      return callback();
+    }
     tml.logger.debug("loading agent from " + agent_host);
 
     utils.addJS(window.document, 'tml-agent', agent_host, function() {
@@ -2743,9 +2757,57 @@ module.exports = {
     );
   },
 
+  childTypeCounts: function(node) {
+    var children = node.childNodes;
+    var counts = {
+      total: 0,
+      inline: 0,
+      breaking: 0,
+      text: 0
+    };
+
+    for (var i = 0; i < children.length; i++) {
+      var child = children[i];
+
+      if (child.nodeType == 1) {
+        counts.total++;
+        if (this.isInline(child))
+          counts.inline++;
+        else
+          counts.breaking++;
+      } else if (child.nodeType == 3 && this.isValidText(child)) {
+        counts.total++;
+        counts.text++;
+      }
+    }
+
+    return counts;
+  },
+
+  childElementCount: function(node) {
+    var count = 0;
+    var children = node.childNodes;
+    for (var i = 0; i < children.length; i++) {
+      if (children[i].nodeType == 1) {
+        count++;
+      }
+    }
+
+    return count;
+  },
+
+  hasOnlyLinks: function(node) {
+    var count = this.childElementCount(node);
+    return (count == node.getElementsByTagName('A').length);
+  },
+
   hasInlineSiblings: function(node) {
+    if (this.hasOnlyLinks(node.parentNode))
+      return false;
+
+    var has_siblings = (node.parentNode && node.parentNode.childNodes.length > 1);
     return (
-      (node.parentNode && node.parentNode.childNodes.length > 1) &&
+      has_siblings &&
       (node.previousSibling && (this.isInline(node.previousSibling) || this.isValidText(node.previousSibling))) ||
       (node.nextSibling && (this.isInline(node.nextSibling) || this.isValidText(node.nextSibling)))
     );
@@ -3067,6 +3129,7 @@ module.exports = {
 
             helpers.includeAgent(tml.app, {
               host: options.agent.host,
+              enabled: options.agent.enabled,
               cache: options.agent.cache || 864000000,
               domains: options.agent.domains || {},
               locale: tml.app.current_locale,
@@ -3433,7 +3496,7 @@ DomTokenizer.prototype = {
 
   contentCache   :[],
   contentNodes   :[],
-  translatedNodes :[],
+  translatedNodes :[],  
 
   getOption: function(name) {
     if(typeof this.options[name] === 'undefined' || this.options[name] === null) {
@@ -3509,7 +3572,7 @@ DomTokenizer.prototype = {
       var child = node.childNodes[i];
       if(!child || !this.isTranslatable(child)) continue;
 
-      if (child.nodeType == 3 || dom.isInline(child) && dom.hasInlineSiblings(child)) {
+      if (child.nodeType == 3 || (dom.isInline(child) && dom.hasInlineSiblings(child))) {
         buffer.push(child);
       } else {
         this.replaceNodes(buffer);
@@ -8811,8 +8874,22 @@ DataTokenizer.prototype = {
       }
     }
     return label;
+  },
+  get metadata() {
+    
+    var tokenTypes = DataTokenizer.prototype.getSupportedTokens();
+    return tokenTypes.reduce(function (result, value, index)
+    {
+      var name = value[1].name;
+      if (!name)
+          name = /function ([^(]*)/.exec( value[1]+"" )[1];
+      
+      if (name)
+          result[name] = value[0];
+      
+      return result;
+    }, {});
   }
-
 };
 
 module.exports = DataTokenizer;
@@ -8855,9 +8932,9 @@ var RESERVED_TOKEN       = "tml";
 var RE_SHORT_TOKEN_START = "\\[[\\w]*:";                      // [link:
 var RE_SHORT_TOKEN_END   = "\\]";                             // ]
 var RE_LONG_TOKEN_START  = "\\[[\\w]*\\]";                    // [link]
-var RE_LONG_TOKEN_END    = "\\[\\/[\\w]*\\]";                 // [/link]
+var RE_LONG_TOKEN_END    = "\\[\\/\\s*[\\w]*\\s*\\]";         // [/link]
 var RE_HTML_TOKEN_START  = "<[^\\>]*>";                       // <link>
-var RE_HTML_TOKEN_END    = "<\\/[^\\>]*>";                    // </link>
+var RE_HTML_TOKEN_END    = "<\\/\\s*[^\\>]*\\s*>";            // </link>
 var RE_TEXT              = "[^\\[\\]<>]+";                    // anything that is left
 
 var TOKEN_TYPE_SHORT     = "short";
@@ -8900,26 +8977,39 @@ DecorationTokenizer.prototype = {
   },
 
   parse: function() {
-    var token = this.getNextFragment();
+    var token = this.getNextFragment(), name;
     if (token.match(new RegExp(RE_SHORT_TOKEN_START))) {
-      return this.parseTree(token.replace(/[\[:]/g, ''), TOKEN_TYPE_SHORT);
+      name = token.replace(/[\[:]/g, '');
+      if (!name) return token;
+      return this.parseTree(name, TOKEN_TYPE_SHORT);
     } else if (token.match(new RegExp(RE_LONG_TOKEN_START))) {
-      return this.parseTree(token.replace(/[\[\]]/g, ''), TOKEN_TYPE_LONG);
+      name = token.replace(/[\[\]]/g, '');
+      if (!name) return token;
+      return this.parseTree(name, TOKEN_TYPE_LONG);
     } else if (token.match(new RegExp(RE_HTML_TOKEN_START))) {
       if (token.indexOf("/>") != -1) return token;
-      return this.parseTree(token.replace(/[<>]/g, '').split(' ')[0], TOKEN_TYPE_HTML);
+      name = token.replace(/[<>]/g, '').split(' ')[0];
+      if (!name) return token;
+      return this.parseTree(name, TOKEN_TYPE_HTML);
     }
     return token;
   },
 
   parseTree: function(name, type) {
     var tree = [name];
+    var endTag, endMatch;
+    Object.defineProperty(tree, "tokenType", {
+      value: type,
+      configurable: true,
+      enumerable: false,
+      writable: true
+    });
     if (this.tokens.indexOf(name) == -1 && name != RESERVED_TOKEN)
       this.tokens.push(name);
-
+    
     if (type == TOKEN_TYPE_SHORT) {
       var first = true;
-      while (this.peek()!==null && !this.peek().match(new RegExp(RE_SHORT_TOKEN_END))) {
+      while (this.peek()!==null && !(endMatch = this.peek().match(new RegExp(RE_SHORT_TOKEN_END)))) {
         var value = this.parse();
         if (first && typeof value == "string") {
           value = value.replace(/^\s+/,'');
@@ -8928,15 +9018,26 @@ DecorationTokenizer.prototype = {
         tree.push(value);
       }
     } else if (type == TOKEN_TYPE_LONG) {
-      while (this.peek()!==null && !this.peek().match(new RegExp(RE_LONG_TOKEN_END))) {
+      endTag = new RegExp("\\[\\/\\s*" + name + "\\s*\\]");
+      while (this.peek()!==null && !(endMatch = this.peek().match(endTag))) {
         tree.push(this.parse());
       }
     } else if (type == TOKEN_TYPE_HTML) {
-      while (this.peek()!==null && !this.peek().match(new RegExp(RE_HTML_TOKEN_END))) {
+      endTag = new RegExp("<\\/\\s*" + name + "\\s*>");
+      while (this.peek()!==null && !(endMatch = this.peek().match(endTag))) {
         tree.push(this.parse());
       }
     }
-
+    
+    if (!endMatch) {
+      Object.defineProperty(tree, "tokenError", {
+        value: 'noclose',
+        configurable: true,
+        enumerable: false,
+        writable: true
+      });
+    }
+    
     this.getNextFragment();
     return tree;
   },
@@ -9010,8 +9111,21 @@ DecorationTokenizer.prototype = {
     var result = this.evaluate(this.parse());
     result = result.replace('[/tml]', '');
     return result;
+  },
+  metadata: {
+    short: {
+      start: RE_SHORT_TOKEN_START,
+      end: RE_SHORT_TOKEN_END
+    },
+    long: {
+      start: RE_LONG_TOKEN_START, 
+      end: RE_LONG_TOKEN_END
+    },
+    html: {
+      start: RE_HTML_TOKEN_START,
+      end: RE_HTML_TOKEN_END 
+    }
   }
-
 };
 
 
@@ -9542,12 +9656,12 @@ var decorator       = require('../decorators/html');
  * @param label
  */
 
-var DataToken = function(name, label) {
+function DataToken(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
   this.parseElements();
-};
+}
 
 DataToken.prototype = {
 
@@ -9949,13 +10063,13 @@ var decorator       = require('../decorators/html');
 
 var DataToken       = require('./data');
 
-var MethodToken = function(name, label) {
+function MethodToken(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
   this.parseElements();
   this.initObject();
-};
+}
 
 MethodToken.prototype = new DataToken();
 MethodToken.prototype.constructor = MethodToken;
@@ -10066,12 +10180,12 @@ var decorator       = require('../decorators/html');
 
 var DataToken       = require('./data');
 
-var PipedToken = function(name, label) {
+function PipedToken(name, label) {
   if (!name) return;
   this.full_name = name;
   this.label = label;
   this.parseElements();
-};
+}
 
 PipedToken.prototype = new DataToken();
 PipedToken.prototype.constructor = PipedToken;
