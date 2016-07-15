@@ -3496,7 +3496,7 @@ DomTokenizer.prototype = {
 
   contentCache   :[],
   contentNodes   :[],
-  translatedNodes :[],  
+  translatedNodes :[],
 
   getOption: function(name) {
     if(typeof this.options[name] === 'undefined' || this.options[name] === null) {
