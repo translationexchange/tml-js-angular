@@ -337,6 +337,25 @@ describe('module tmlTr', function () {
 
         });
 
+        it('should use scope number formatter', function ()
+        {
+            $rootScope.bigNumber = 12000;
+            $rootScope.formatNum = function (value) {
+                return $filter('number')(value);
+            }
+
+            var element = angular.element('<span tml-tr="{count} people reached" count="bigNumber" count-format="formatNum"></span>');
+            element = $compile(element)($rootScope);
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('12,000 people reached');
+
+            $rootScope.bigNumber = 1200000;
+
+            $rootScope.$digest();
+            expect(element.text()).toBe('1,200,000 people reached');
+        });
+
         it('should not error on unparseable property expression', function ()
         {
             var element = angular.element('<span tml-tr="Load page {num} of {count}" num="¯\(ツ)/¯" count="(╯°□°）╯︵ ┻━┻"></span>');

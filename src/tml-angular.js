@@ -47,22 +47,19 @@
                 {
                     var key = sKeys[i];
                     var value = tplScope[key]; 
-                    if( Object.prototype.toString.call( value ) === '[object Array]' )
-                    {
-                        var paramVal = [value];
-                        
-                        if (tplScope[key + '-format'])
-                            paramVal[1] = tplScope[key + '-format'];
+                    var paramVal = [value];
+                    
+                    if (tplScope[key + '-format'])
+                        paramVal[1] = tplScope[key + '-format'];
 
-                        if (tplScope[key + '-options'])
-                            paramVal[2] = tplScope[key + '-options'];
-                        
-                        params[key] = paramVal;
-                    }
-                    else
-                    {
-                        params[key] = value;
-                    }
+                    if (tplScope[key + '-options'])
+                        paramVal[2] = tplScope[key + '-options'];
+                    
+                    
+                    if (paramVal.length === 1)
+                        paramVal = paramVal[0];
+                    
+                    params[key] = paramVal;
                 }
                 //console.log('running template %s with %s', elem._template, JSON.stringify(params));
                 var args = [elem._template];
